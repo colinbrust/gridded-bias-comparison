@@ -1,0 +1,10 @@
+Package: GriddedPackage
+Version: 0.0.0.9000
+Title: Compares gridded climate datasets
+Description: Can be used to create box plots, density plots, and maps that compare different 
+    gridded temperature and precipitation data from different gridded datasets.
+Authors@R: person("Colin", "Brust", email = "colin.brust@umontana.edu", role = c("aut", "cre"))
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+ByteCompile: true
