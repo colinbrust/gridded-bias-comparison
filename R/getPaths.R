@@ -5,11 +5,9 @@
 
 # This function returns a list of raster images that correspond to the
 # arguments entered into the function
-GetImages <- function(time, statistic, variable) {
+getPaths <- function(time, statistic, variable) {
 
-  dataNames <- c("Chirps", "PRISM", "Gridmet", "Daymet", "TopoWx")
-
-  dataList <- list()
+  library(magrittr)
 
   paths <-
     "./analysis/data/derived_data" %>%
@@ -18,19 +16,6 @@ GetImages <- function(time, statistic, variable) {
     grep(variable, ., value = TRUE) %>%
     grep(time, ., value = TRUE)
 
-  for(i in 1:length(dataNames)) {
-
-    fileVec <- grep(dataNames[i], paths, value = TRUE)
-
-    if (length(fileVec) == 0) {
-
-    } else {
-
-      dataList[[i]] <- fileVec
-    }
-
-  }
-
-  return(dataList)
+  lapply(paths, raster::raster)
 
 }
