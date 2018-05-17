@@ -1,5 +1,0 @@
-
-
-subsetPaths <- function(fileList) {
-
-}
