@@ -3,46 +3,44 @@
 # this function takes a list of rasters, extracts their values to points,
 # and returns a list of data frames
 
-extractValues <- function(rastList) {
+shpNaRm <- function(shp) {
 
-  library(raster)
+  shp$CD[is.na(shp$CD)] <- "Out of State"
+  return(shp)
+}
 
-  shpNaRm <- function(shp) {
+ptFile <-
+  "./analysis/data/raw_data/shapefiles/mtPtsCDs.shp" %>%
+  sf::read_sf() %>%
+  shpNaRm()
 
-    shp$CD[is.na(shp$CD)] <- "Out of State"
-    return(shp)
-  }
+extractValues <- function(rastList, ptFile) {
 
-  mtPoints <-
-    "./analysis/data/raw_data/shapefiles/mtPtsCDs.shp" %>%
-    raster::shapefile() %>%
-    shpNaRm()
+  # library(raster)
+  # library(tibble)
+  # library(magrittr)
+  # library(stringr)
+  # library(sf)
+  # library(velox)
 
   ptExtract <- function(rastImg) {
 
+
     sourceName <- stringr::str_replace(basename(raster::filename(rastImg)), ".tif","")
 
-    reproj <- sp::spTransform(mtPoints, raster::crs(rastImg))
+    print(sourceName)
+
+    reproj <- sf::st_transform(ptFile, raster::projection(rastImg))
 
     vx <- velox::velox(rastImg)
 
-    df <- data.frame(vx$extract_points(sp = reproj))
-
-    colnames(df) <- c(sourceName)
-
-    return(df)
+    vx$extract_points(sp = reproj) %>%
+      tibble::as_tibble() %>%
+      magrittr::set_colnames(c(sourceName))
 
   }
 
-  return(lapply(rastList,ptExtract))
+  lapply(rastList,ptExtract)
 
 
 }
-
-# byDiv <- function(shp) {
-#
-#   shp <- shp[shp$CD == CD,]
-#
-# }
-
-#test$CD <- reproj@data$CD

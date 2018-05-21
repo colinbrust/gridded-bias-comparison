@@ -1,25 +1,41 @@
 # dfList is a list of data frames created from extractValues.R
 # this function takes a list of data frames and returns a large data frame
 
-aggregateDFs <- function(dfList) {
+shpNaRm <- function(shp) {
 
-  do.call("cbind", dfList) %>%
-    tidyr::gather(key = "Names",
-                  value = "Value") %>%
-    tidyr::separate(col = "Names",
-                    sep = "_",
-                    into = c("Index", "Dataset", "Time", "Variable", "Statistic"))
+  shp$CD[is.na(shp$CD)] <- "Out of State"
+  return(shp)
+}
 
-  dat <- tidyr::gather(dfinal,
-         key = "Names",
-         value = "Value")
+ptFile <-
+  "./analysis/data/raw_data/shapefiles/mtPtsCDs.shp" %>%
+  raster::shapefile() %>%
+  shpNaRm()
 
-  dat3 <- separate(dat2,
-                   col = "Variable",
-                   sep = "\\.",
-                   into = c("Index", "Dataset", "Time", "Variable", "Statistic"))
+aggregateDFs <- function(dfList, ptFile) {
 
+  # library(tibble)
+  # library(tidyr)
+  # library(dplyr)
 
+  dat <-  do.call("cbind", dfList) %>%
+          tibble::as_data_frame() %>%
+          tibble::add_column(ptFile@data$CD) %>%
+          tibble::add_column(ptFile@data$ORIG_FID)%>%
+          dplyr::rename("ClimateDivision" = "ptFile@data$CD")%>%
+          dplyr::rename("PointID" = "ptFile@data$ORIG_FID") %>%
+          tidyr::gather(key = "Names",
+                        value = "Value",
+                        -"ClimateDivision",
+                        -"PointID") %>%
+          tidyr::separate(col = "Names",
+                          sep = "_",
+                          into = c("Index", "Dataset", "Time", "Variable", "Statistic"))
 
+  if(dat$Variable[1] == "tmin" || dat$Variable[1] == "tmax") {
 
+    dat$Value[dat$Dataset == "Gridmet"] = dat$Value[dat$Dataset == "Gridmet"] - 273.15
+  }
+
+  return(dat)
 }
