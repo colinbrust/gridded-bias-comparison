@@ -6,10 +6,10 @@ library(magrittr)
 
 
 ptFile <-
-  "./analysis/data/raw_data/shapefiles/mtPtsCDs.shp" %>%
+  "./analysis/data/raw_data/shapefiles/ptsAttributed.shp" %>%
   sf::read_sf()
 
-saveFile <- function(variable, time, stat) {
+saveFile <- function(time, stat, variable) {
 
   getPaths(time, stat, variable) %>%
     extractValues(ptFile) %>%

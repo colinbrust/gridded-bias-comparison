@@ -9,14 +9,26 @@ aggregateDFs <- function(dfList, ptFile) {
 
   dat <-  do.call("cbind", dfList) %>%
           tibble::as_data_frame() %>%
-          tibble::add_column(ptFile$CD) %>%
           tibble::add_column(ptFile$ORIG_FID)%>%
-          dplyr::rename("ClimateDivision" = "ptFile$CD")%>%
+          tibble::add_column(ptFile$CD) %>%
+          tibble::add_column(ptFile$Aspect)%>%
+          tibble::add_column(ptFile$Elevation)%>%
+          tibble::add_column(ptFile$Slope)%>%
+          tibble::add_column(ptFile$Landform)%>%
           dplyr::rename("PointID" = "ptFile$ORIG_FID") %>%
+          dplyr::rename("ClimateDivision" = "ptFile$CD")%>%
+          dplyr::rename("Aspect" = "ptFile$Aspect") %>%
+          dplyr::rename("Elevation" = "ptFile$Elevation") %>%
+          dplyr::rename("Slope" = "ptFile$Slope") %>%
+          dplyr::rename("Landform" = "ptFile$Landform") %>%
           tidyr::gather(key = "Names",
                         value = "Value",
+                        -"PointID",
                         -"ClimateDivision",
-                        -"PointID") %>%
+                        -"Aspect",
+                        -"Elevation",
+                        -"Slope",
+                        -"Landform") %>%
           tidyr::separate(col = "Names",
                           sep = "_",
                           into = c("Index", "Dataset", "Time", "Variable", "Statistic"))

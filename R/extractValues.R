@@ -21,9 +21,12 @@ extractValues <- function(rastList, ptFile) {
 
     vx <- velox::velox(rastImg)
 
+    print(paste(sourceName, "is processing."))
+
     vx$extract_points(sp = reproj) %>%
       tibble::as_tibble() %>%
       magrittr::set_colnames(c(sourceName))
+
 
   }
 
