@@ -4,63 +4,52 @@ library(tibble)
 library(tidyr)
 
 
-makePlot <- function(variable, time, stat, ...) {
+makeBoxplots <- function(variable, time, stat, ...) {
 
   #library(feather)
   library(ggplot2)
+  source("./R/factorData.R")
+  source("./R/makeTitles.R")
 
   tmpPallete <- c("#5B1A18", "#D67236", "#FD6467", "#F1BB7B")
   pptPallete <- c("#D8A499", "#5B1A18", "#D67236", "#FD6467")
 
+  plotTitle <- makeTitles(variable, time, stat, c(...))
+
   toSubset = c(...)
+
+  if(is.null(toSubset)) {
+    toSubset = TRUE
+  }
 
   dat <- "./analysis/data/derived_data/files/" %>%
     paste0(time)%>%
     paste(variable, paste0(stat, ".feather"), sep = "_") %>%
     feather::read_feather() %>%
-    dplyr::filter_(toSubset)
-
-  dat$Dataset <- factor(dat$Dataset)
-
-  if(time == "Monthly") {
-
-    plotTitle <- tools::toTitleCase(paste("Boxplot of", variable, dat$Statistic[1], "by", time, toString(toSubset)))
-    dat$Index <- factor(dat$Index)
-    levels(dat$Index) <- month.name
-
-  } else if (time == "Seasonal") {
-
-    plotTitle <- tools::toTitleCase(paste("Boxplot of", variable, dat$Statistic[1], "by", time,  toString(toSubset)))
-    dat$Index <- factor(dat$Index)
-    levels(dat$Index) <-  c("Winter", "Spring", "Summer", "Autumn")
-
-  } else if (time == "Annual") {
-
-    plotTitle <- tools::toTitleCase(paste("Boxplot of 30-Year", variable, dat$Statistic[1]),  toString(toSubset))
-  }
+    dplyr::filter_(toSubset) %>%
+    factorData(time)
 
   bp <- ggplot(dat, aes(x = Index, y = Value, fill = Dataset)) +
     geom_boxplot(color = "gray11")
 
   if (variable == "tmax" || variable == "tmin") {
     bp+scale_fill_manual(values=tmpPallete)  +
-      labs(x = time, y = "Temperature (°C)") +
-      ggtitle(plotTitle) +
+      labs(title = plotTitle[1], subtitle = plotTitle[2], x = time, y = "Temperature (°C)") +
       theme(plot.title = element_text(hjust = 0.5, colour = "gray15", face = "bold"),
+            plot.subtitle = element_text(hjust = 0.5, colour = "gray20", face = "bold"),
             axis.title.x = element_text(colour = "gray26", face = "bold"),
             axis.title.y = element_text(colour = "gray26", face = "bold"),
             legend.title = element_text(hjust = 0.5, colour="gray15", face = "bold"),
             legend.text = element_text(colour="gray26", face = "bold"))
   } else {
     bp+scale_fill_manual(values=pptPallete)  +
-      labs(x = time, y = "Precipitation (mm)") +
-      ggtitle(plotTitle) +
+      labs(title = plotTitle[1], subtitle = plotTitle[2], x = time, y = "Precipitation (mm)") +
       theme(plot.title = element_text(hjust = 0.5, colour = "gray15", face = "bold"),
+            plot.subtitle = element_text(hjust = 0.5, colour = "gray20", face = "bold"),
             axis.title.x = element_text(colour = "gray26", face = "bold"),
             axis.title.y = element_text(colour = "gray26", face = "bold"),
             legend.title = element_text(hjust = 0.5, colour="gray15", face = "bold"),
             legend.text = element_text(colour="gray26", face = "bold"))
   }
-
 
 }
