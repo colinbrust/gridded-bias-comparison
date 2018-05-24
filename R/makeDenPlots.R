@@ -1,3 +1,11 @@
+# function that creates density based on the parameters put into the function.
+
+# variable - either "tmax", "tmin" or "ppt"
+# time - either "Annual", "Seasonal", or "Monthly"
+# stat - either "Normal", or "SD"
+# ... - a list of logical statements that can be used to refine the boxplots
+# (ClimateDivision == "WESTERN", Elevation > 2000, etc.)
+
 
 makeDenPlots <- function(variable, time, stat, ...) {
 

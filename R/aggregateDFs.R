@@ -1,42 +1,48 @@
 # dfList is a list of data frames created from extractValues.R
 # this function takes a list of data frames and returns a large data frame
 
-aggregateDFs <- function(dfList, ptFile) {
+aggregateDFs <- function(time, stat, variable, ptFile) {
 
   # library(tibble)
   # library(tidyr)
   # library(dplyr)
+  source("./R/getPaths.R")
+  source("./R/extractValues.R")
+  source("./R/ensembleNormals.R")
+  library(magrittr)
 
-  dat <-  do.call("cbind", dfList) %>%
-          tibble::as_data_frame() %>%
-          tibble::add_column(ptFile$ORIG_FID)%>%
-          tibble::add_column(ptFile$CD) %>%
-          tibble::add_column(ptFile$Aspect)%>%
-          tibble::add_column(ptFile$Elevation)%>%
-          tibble::add_column(ptFile$Slope)%>%
-          tibble::add_column(ptFile$Landform)%>%
-          dplyr::rename("PointID" = "ptFile$ORIG_FID") %>%
-          dplyr::rename("ClimateDivision" = "ptFile$CD")%>%
-          dplyr::rename("Aspect" = "ptFile$Aspect") %>%
-          dplyr::rename("Elevation" = "ptFile$Elevation") %>%
-          dplyr::rename("Slope" = "ptFile$Slope") %>%
-          dplyr::rename("Landform" = "ptFile$Landform") %>%
-          tidyr::gather(key = "Names",
-                        value = "Value",
-                        -"PointID",
-                        -"ClimateDivision",
-                        -"Aspect",
-                        -"Elevation",
-                        -"Slope",
-                        -"Landform") %>%
-          tidyr::separate(col = "Names",
-                          sep = "_",
-                          into = c("Index", "Dataset", "Time", "Variable", "Statistic"))
+  # function that changes gridmet values from Kelvin to Celsius
+  changeGM <- function(dat) {
 
-  if(dat$Variable[1] == "tmin" || dat$Variable[1] == "tmax") {
+    indexes <- grep("Gridmet", colnames(dat))
+    dat[indexes] <- dat[indexes] - 273.15
 
-    dat$Value[dat$Dataset == "Gridmet"] = dat$Value[dat$Dataset == "Gridmet"] - 273.15
+    dat
   }
 
-  return(dat)
+  dat <-
+    getPaths(time, stat, variable) %>%
+    extractValues(ptFile) %>%
+    do.call("cbind", .) %>%
+    tibble::as_data_frame() %>%
+    changeGM() %>%
+    ensembleNormals(time, stat, variable) %>%
+    tibble::add_column("PointID" = ptFile$ORIG_FID)%>%
+    tibble::add_column("ClimateDivision" = ptFile$CD) %>%
+    tibble::add_column("Aspect" = ptFile$Aspect)%>%
+    tibble::add_column("Elevation" = ptFile$Elevation)%>%
+    tibble::add_column("Slope" = ptFile$Slope)%>%
+    tibble::add_column("Landform" = ptFile$Landform)%>%
+    tidyr::gather(key = "Names",
+                  value = "Value",
+                  -"PointID",
+                  -"ClimateDivision",
+                  -"Aspect",
+                  -"Elevation",
+                  -"Slope",
+                  -"Landform") %>%
+    tidyr::separate(col = "Names",
+                    sep = "_",
+                    into = c("Index", "Dataset", "Time", "Variable", "Statistic"))
+
 }

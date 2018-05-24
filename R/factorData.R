@@ -1,3 +1,9 @@
+# function that factors certain columns of datasets to prepare them to be
+# plotted
+
+# dat - dataframe to be plotted
+# time - either "Annual", "Seasonal", or "Monthly"
+
 factorData <- function(dat, time) {
 
   dat$Dataset <- factor(dat$Dataset)

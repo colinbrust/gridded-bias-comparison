@@ -1,8 +1,10 @@
-library(ggplot2)
-library(readr)
-library(tibble)
-library(tidyr)
+# function that creates boxplots based on the parameters put into the function.
 
+# variable - either "tmax", "tmin" or "ppt"
+# time - either "Annual", "Seasonal", or "Monthly"
+# stat - either "Normal", or "SD"
+# ... - a list of logical statements that can be used to refine the boxplots
+      # (ClimateDivision == "WESTERN", Elevation > 2000, etc.)
 
 makeBoxplots <- function(variable, time, stat, ...) {
 

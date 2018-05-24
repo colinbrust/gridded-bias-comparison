@@ -1,3 +1,10 @@
+# Function that makes a title for a plot based on input parameters.
+
+# variable - either "tmax", "tmin" or "ppt"
+# time - either "Annual", "Seasonal", or "Monthly"
+# stat - either "Normal", or "SD"
+# toSubset - the list of logical statements passed into the plot function
+
 makeTitles <- function(variable, time, stat, toSubset) {
 
   if(time == "Monthly") {

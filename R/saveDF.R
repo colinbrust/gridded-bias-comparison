@@ -7,7 +7,7 @@ saveDF <- function(DF) {
   # library(feather)
   # library(dplyr)
 
-  name <- paste0("./analysis/data/derived_data/files/",
+  name <- paste0("./analysis/data/derived_data/extracts/",
                  paste(
                  dplyr::select(DF, "Time")[[1]][1],
                  dplyr::select(DF, "Variable")[[1]][1],

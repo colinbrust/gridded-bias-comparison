@@ -15,6 +15,7 @@ getPaths <- function(time, statistic, variable) {
     grep(variable, ., value = TRUE) %>%
     grep(time, ., value = TRUE) %>%
     grep("Thumbs.db", ., value = TRUE, invert = TRUE) %>%
+    grep("feather", ., value = TRUE, invert = TRUE) %>%
     lapply(raster::raster)
 
 }
