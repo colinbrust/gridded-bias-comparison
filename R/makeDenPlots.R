@@ -19,18 +19,15 @@ makeDenPlots <- function(variable, time, stat, ...) {
 
   plotTitle <- makeTitles(variable, time, stat, c(...))
 
-  toSubset = c(...)
-
-  if(is.null(toSubset)) {
-    toSubset = TRUE
-  }
-
-  dat <- "./analysis/data/derived_data/files/" %>%
+  dat <- "./analysis/data/derived_data/extracts/" %>%
     paste0(time)%>%
     paste(variable, paste0(stat, ".feather"), sep = "_") %>%
     feather::read_feather() %>%
-    dplyr::filter_(toSubset) %>%
+    dplyr::filter(Montana == "yes") %>%
+    dplyr::filter(Dataset != "Ensemble") %>%
+    dplyr::filter_(...) %>%
     factorData(time)
+
 
   den <-  ggplot2::ggplot(dat, aes(x = Value,  color = Dataset)) +
     geom_density(size = 1) +
@@ -38,7 +35,7 @@ makeDenPlots <- function(variable, time, stat, ...) {
 
   if(variable == "tmax" || variable == "tmin") {
     den+scale_color_manual(values=tmpPallete)  +
-      labs(title = plotTitle[1], subtitle = plotTitle[2], x = time, y = "Temperature (°C)") +
+      labs(title = plotTitle[1], subtitle = plotTitle[2], y = "Density", x = "Temperature (°C)") +
       theme(plot.title = element_text(hjust = 0.5, colour = "gray15", face = "bold"),
             plot.subtitle = element_text(hjust = 0.5, colour = "gray20", face = "bold"),
             axis.title.x = element_text(colour = "gray26", face = "bold"),
@@ -47,7 +44,7 @@ makeDenPlots <- function(variable, time, stat, ...) {
             legend.text = element_text(colour="gray26", face = "bold"))
   } else {
     den+scale_color_manual(values=pptPallete)  +
-      labs(title = plotTitle[1], subtitle = plotTitle[2], x = time, y = "Precipitation (mm)") +
+      labs(title = plotTitle[1], subtitle = plotTitle[2], y = "Density", x = "Precipitation (mm)") +
       theme(plot.title = element_text(hjust = 0.5, colour = "gray15", face = "bold"),
             plot.subtitle = element_text(hjust = 0.5, colour = "gray20", face = "bold"),
             axis.title.x = element_text(colour = "gray26", face = "bold"),

@@ -9,6 +9,7 @@ aggregateDFs <- function(time, stat, variable, ptFile) {
   source("./R/getPaths.R")
   source("./R/extractValues.R")
   source("./R/ensembleNormals.R")
+  source("./R/ensembleDiff.R")
   library(magrittr)
 
   # function that changes gridmet values from Kelvin to Celsius
@@ -20,8 +21,7 @@ aggregateDFs <- function(time, stat, variable, ptFile) {
     dat
   }
 
-  dat <-
-    getPaths(time, stat, variable) %>%
+  getPaths(time, stat, variable) %>%
     extractValues(ptFile) %>%
     do.call("cbind", .) %>%
     tibble::as_data_frame() %>%
@@ -29,6 +29,7 @@ aggregateDFs <- function(time, stat, variable, ptFile) {
     ensembleNormals(time, stat, variable) %>%
     tibble::add_column("PointID" = ptFile$ORIG_FID)%>%
     tibble::add_column("ClimateDivision" = ptFile$CD) %>%
+    tibble::add_column("Montana" = ptFile$Montana)%>%
     tibble::add_column("Aspect" = ptFile$Aspect)%>%
     tibble::add_column("Elevation" = ptFile$Elevation)%>%
     tibble::add_column("Slope" = ptFile$Slope)%>%
@@ -40,9 +41,12 @@ aggregateDFs <- function(time, stat, variable, ptFile) {
                   -"Aspect",
                   -"Elevation",
                   -"Slope",
-                  -"Landform") %>%
+                  -"Landform",
+                  -"Montana") %>%
     tidyr::separate(col = "Names",
                     sep = "_",
-                    into = c("Index", "Dataset", "Time", "Variable", "Statistic"))
+                    into = c("Index", "Dataset", "Time", "Variable", "Statistic")) %>%
+    ensembleDiff() %>%
+    dplyr::mutate(EnsDiff = EnsVal - Value)
 
 }

@@ -5,31 +5,50 @@
 # stat - either "Normal", or "SD"
 # toSubset - the list of logical statements passed into the plot function
 
-makeTitles <- function(variable, time, stat, toSubset) {
+makeTitles <- function(variable, time, stat, toSubset, deviation = FALSE) {
 
-  if(time == "Monthly") {
+  if (deviation == FALSE) {
+    if(time == "Monthly") {
 
-    plotTitle <- tools::toTitleCase(paste("Plot of", variable, stat, "by Month"))
+      plotTitle <- tools::toTitleCase(paste("Plot of", variable, stat, "by Month"))
 
-  } else if (time == "Seasonal") {
+    } else if (time == "Seasonal") {
 
-    plotTitle <- tools::toTitleCase(paste("Plot of", variable, stat, "by Season"))
+      plotTitle <- tools::toTitleCase(paste("Plot of", variable, stat, "by Season"))
 
-  } else if (time == "Annual") {
+    } else if (time == "Annual") {
 
-    plotTitle <- tools::toTitleCase(paste("Plot of the 30-year", variable, stat))
-  }
+      plotTitle <- tools::toTitleCase(paste("Plot of the 30-year", variable, stat))
+    }
 
-  if(!is.null(toSubset)) {
+    if(!is.null(toSubset)) {
 
-    subtitle <- paste("Subset by", paste(toSubset, collapse = ", "))
+      subtitle <- paste("Subset by:", paste(toSubset, collapse = ", "))
 
-    return(c(plotTitle, subtitle))
+      return(c(plotTitle, subtitle))
+
+    } else {
+
+      subtitle <- ""
+      return(c(plotTitle, subtitle))
+    }
 
   } else {
 
-    subtitle <- ""
-    return(c(plotTitle, subtitle))
-  }
+    plotTitle <- tools::toTitleCase(paste("Plot of", time, "deviation from dataset average for",
+                                            variable, stat))
 
+    if(!is.null(toSubset)) {
+
+      subtitle <- paste("Subset by:", paste(toSubset, collapse = ", "))
+
+      return(c(plotTitle, subtitle))
+
+    } else {
+
+      subtitle <- ""
+      return(c(plotTitle, subtitle))
+    }
+
+  }
 }
