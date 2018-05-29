@@ -15,38 +15,43 @@ aggregateDFs <- function(time, stat, variable, ptFile) {
   # function that changes gridmet values from Kelvin to Celsius
   changeGM <- function(dat) {
 
-    indexes <- grep("Gridmet", colnames(dat))
-    dat[indexes] <- dat[indexes] - 273.15
+    if (grepl("Normal", colnames(dat))== TRUE &&
+       (grepl("tmax", colnames(dat)) == TRUE ||
+        grepl("tmin", colnames(dat)) == TRUE)) {
+
+      indexes <- grep("Gridmet", colnames(dat))
+      dat[indexes] <- dat[indexes] - 273.15
+    }
 
     dat
   }
 
-  getPaths(time, stat, variable) %>%
-    extractValues(ptFile) %>%
-    do.call("cbind", .) %>%
-    tibble::as_data_frame() %>%
-    changeGM() %>%
-    ensembleNormals(time, stat, variable) %>%
-    tibble::add_column("PointID" = ptFile$ORIG_FID)%>%
-    tibble::add_column("ClimateDivision" = ptFile$CD) %>%
-    tibble::add_column("Montana" = ptFile$Montana)%>%
-    tibble::add_column("Aspect" = ptFile$Aspect)%>%
-    tibble::add_column("Elevation" = ptFile$Elevation)%>%
-    tibble::add_column("Slope" = ptFile$Slope)%>%
-    tibble::add_column("Landform" = ptFile$Landform)%>%
-    tidyr::gather(key = "Names",
-                  value = "Value",
-                  -"PointID",
-                  -"ClimateDivision",
-                  -"Aspect",
-                  -"Elevation",
-                  -"Slope",
-                  -"Landform",
-                  -"Montana") %>%
-    tidyr::separate(col = "Names",
-                    sep = "_",
-                    into = c("Index", "Dataset", "Time", "Variable", "Statistic")) %>%
-    ensembleDiff() %>%
-    dplyr::mutate(EnsDiff = EnsVal - Value)
-
+    getPaths(time, stat, variable) %>%
+      extractValues(ptFile) %>%
+      do.call("cbind", .) %>%
+      tibble::as_data_frame() %>%
+      changeGM() %>%
+      ensembleNormals(time, stat, variable) %>%
+      tibble::add_column("PointID" = ptFile$ORIG_FID)%>%
+      tibble::add_column("ClimateDivision" = ptFile$CD) %>%
+      tibble::add_column("Montana" = ptFile$Montana)%>%
+      tibble::add_column("Aspect" = ptFile$Aspect)%>%
+      tibble::add_column("Elevation" = ptFile$Elevation)%>%
+      tibble::add_column("Slope" = ptFile$Slope)%>%
+      tibble::add_column("Landform" = ptFile$Landform)%>%
+      tidyr::gather(key = "Names",
+                    value = "Value",
+                    -"PointID",
+                    -"ClimateDivision",
+                    -"Aspect",
+                    -"Elevation",
+                    -"Slope",
+                    -"Landform",
+                    -"Montana") %>%
+      tidyr::separate(col = "Names",
+                      sep = "_",
+                      into = c("Index", "Dataset", "Time", "Variable", "Statistic")) %>%
+      ensembleDiff() %>%
+      dplyr::mutate(EnsDiff = EnsVal - Value)
 }
+

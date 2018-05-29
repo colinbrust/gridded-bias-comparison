@@ -15,7 +15,7 @@ for(i in 1:length(times)) {
 
     for(k in 1:length(stats)) {
 
-      saveFile(times[i], variables[j], stats[k])
+      saveFile(times[i], stats[k], variables[j], ptFile)
     }
   }
 }

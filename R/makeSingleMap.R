@@ -4,14 +4,21 @@ hexFile <-
   sf::read_sf() %>%
   dplyr::mutate("PointID" = as.character(ORIG_FID))
 
+hexFile <-
+  "./analysis/data/raw_data/shapefiles/hexAttributed.shp" %>%
+  sf::read_sf() %>%
+  dplyr::mutate("PointID" = as.character(ORIG_FID))
+
+
 makeSingleMap <- function(location = "front", timeFilter = "01") {
 
   #library(feather)
   library(ggplot2)
   source("./R/factorData.R")
+  source("./R/mapTitles.R")
 
   #### DELETE COMMENT AFTER YOU MAKE MAPTITLE FUNCTION ####
-  mapTitle <- makeTitles(variable, time, stat, dataset)
+  mapTitle <- mapTitles(variable, time, stat, c()) #c(...))
 
   dat <- "./analysis/data/derived_data/Extracts/" %>%
     paste0(time)%>%
@@ -21,23 +28,31 @@ makeSingleMap <- function(location = "front", timeFilter = "01") {
     dplyr::select(-GRID_ID, -ORIG_FID, -CD) %>%
     dplyr::filter(Index == timeFilter, Dataset != "Ensemble") %>%
     #factorData(time) %>%
-    sf::st_sf()
+    sf::st_sf() %>%
+    sf::st_transform(4326)
 
-  ggplot() +
-    geom_sf(data = dat, aes(fill = Value)) +
+  b <- sf::st_bbox(hexFile)
+
+ggplot() +
+    geom_sf(data = dat, aes(fill = Value), color = NA) +
     facet_wrap(~Dataset) +
-    scale_fill_gradient2(low = "#4f63dd", high = "#ff0101")
+    scale_fill_continuous(low = "blue", high = "orange")
 
 
 }
 
-fill <-
-  dat %>%
-  dplyr::filter(Dataset == "Ensemble") %>%
-  dplyr::select(Value) %>%
-  rep(nrow(dat)/nrow(dplyr::filter(dat, Dataset == "Ensemble"))) %>%
-  unlist() %>%
-  unname()
+test <- G +
+  geom_sf(data = dat, aes(fill = Value), color = NA) +
+  facet_wrap(~Dataset) +
+  scale_fill_continuous(low = "blue", high = "orange")
 
-return(tibble::add_column(dat, "EnsVal" = fill))
+bMap <- function(g) {
+
+  g %>%
+    sf::st_transform(4326) %>%
+    sf::st_bbox() %>%
+    unname %>%
+    ggmap::get_map() %>%
+    ggmap::ggmap()
+}
 

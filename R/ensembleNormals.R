@@ -45,15 +45,17 @@ ensembleNormals <- function(dat, time, stat, variable) {
     if(stat == "Normal") {
 
       toAdd <- rowMeans(dplyr::select(dat, dplyr::contains(pre[i])))
+      dat <- tibble::add_column(dat, !!addName := toAdd)
 
     } else if (stat == "SD") {
 
       fillDat <- dplyr::select(dat, dplyr::contains(pre[i]))
       toAdd <- apply(fillDat, 1, SDavg)
+      dat <- tibble::add_column(dat, !!addName := toAdd)
 
     }
 
-    dat <- tibble::add_column(dat, !!addName := toAdd)
+
 
   }
 
