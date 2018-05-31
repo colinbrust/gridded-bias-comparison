@@ -10,7 +10,7 @@
 
 
 
-ensembleNormals <- function(dat, time, stat, variable) {
+ensemble_normals <- function(dat, time, stat, variable) {
 
   # library(dplyr)
   # library(tibble)

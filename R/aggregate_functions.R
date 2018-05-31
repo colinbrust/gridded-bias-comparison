@@ -6,14 +6,14 @@
 # variable - either "tmax", "tmin" or "ppt"
 # ptFile - a pointfile across Montana
 
-saveFile <- function(time, stat, variable, ptFile) {
+aggregate_functions <- function(time, stat, variable, ptFile) {
 
 
-  source("./R/aggregateDFs.R")
-  source("./R/saveDF.R")
+  source("./R/aggregate_dfs.R")
+  source("./R/save_df.R")
   library(magrittr)
 
-  aggregateDFs(time, stat, variable, ptFile) %>%
-  saveDF()
+  aggregate_dfs(time, stat, variable, ptFile) %>%
+  save_df()
 
 }

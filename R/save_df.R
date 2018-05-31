@@ -2,7 +2,7 @@
 
 # DF is the output of aggregateDFs function.
 
-saveDF <- function(DF) {
+save_df <- function(DF) {
 
   # library(feather)
   # library(dplyr)

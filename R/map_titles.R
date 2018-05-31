@@ -1,48 +1,68 @@
-mapTitles <- function(variable, time, stat, toSubset, deviation = FALSE) {
+map_titles <- function(variable, time, stat, timeFilter, toSubset, deviation = FALSE) {
 
   if (deviation == FALSE) {
+
     if(time == "Monthly") {
 
-      plotTitle <- tools::toTitleCase(paste("Map of", variable, stat, "by Month"))
+      plotTitle <- tools::toTitleCase(paste("Map of", month.name[as.numeric(timeFilter)],
+                                            variable, stat))
 
     } else if (time == "Seasonal") {
 
-      plotTitle <- tools::toTitleCase(paste("Map of", variable, stat, "by Season"))
+      seasons <- c("Winter", "Spring", "Summer", "Autumn")
+      plotTitle <- tools::toTitleCase(paste("Map of", seasons[as.numeric(timeFilter)],
+                                            variable, stat))
 
     } else if (time == "Annual") {
 
       plotTitle <- tools::toTitleCase(paste("Map of the 30-year", variable, stat))
     }
 
-    if(!is.null(toSubset)) {
+  } else if(deviation == TRUE) {
 
-      subtitle <- paste("Subset by:", paste(toSubset, collapse = ", "))
+    if(time == "Monthly") {
 
-      return(c(plotTitle, subtitle))
+      plotTitle <- tools::toTitleCase(paste("Map of", month.name[as.numeric(timeFilter)],
+                                            "deviation from dataset average for", variable, stat))
 
-    } else {
+    } else if (time == "Seasonal") {
 
-      subtitle <- ""
-      return(c(plotTitle, subtitle))
-    }
+      seasons <- c("Winter", "Spring", "Summer", "Autumn")
+      plotTitle <- tools::toTitleCase(paste("Map of", seasons[as.numeric(timeFilter)],
+                                            "deviation from dataset average for", variable, stat))
 
-  } else {
+    } else if (time == "Annual") {
 
-    plotTitle <- tools::toTitleCase(paste("Map of", time, "deviation from dataset average for",
-                                          variable, stat))
-
-    if(!is.null(toSubset)) {
-
-      subtitle <- paste("Subset by:", paste(toSubset, collapse = ", "))
-
-      return(c(plotTitle, subtitle))
-
-    } else {
-
-      subtitle <- ""
-      return(c(plotTitle, subtitle))
+      plotTitle <- tools::toTitleCase(paste("Map of", time, "deviation from dataset average for",
+                                            variable, stat))
     }
 
   }
+
+  if (variable == "tmin" || variable == "tmax") {
+
+    legTitle <- "Temperature (°C)"
+    palette <- "RdBu"
+
+  } else if (variable == "ppt") {
+
+    legTitle <- "Precipitation (mm)"
+    palette <- "Blues"
+
+  }
+
+  if (!is.null(toSubset)) {
+
+    subtitle <- paste("Subset by:", paste(toSubset, collapse = ", "), "\n")
+
+    return(c(plotTitle, subtitle, legTitle, palette))
+
+  } else {
+
+    subtitle <- ""
+    return(c(plotTitle, subtitle, legTitle, palette))
+  }
+
 }
+
 

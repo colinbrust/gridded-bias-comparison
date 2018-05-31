@@ -3,7 +3,7 @@
 # this function takes a list of rasters, extracts their values to points,
 # and returns a list of data frames
 
-extractValues <- function(rastList, ptFile) {
+extract_values <- function(rastList, ptFile) {
 
   # library(raster)
   # library(tibble)
@@ -12,7 +12,7 @@ extractValues <- function(rastList, ptFile) {
   # library(sf)
   # library(velox)
 
-  ptExtract <- function(rastImg) {
+  pt_extract <- function(rastImg) {
 
 
     sourceName <- stringr::str_replace(basename(raster::filename(rastImg)), ".tif","")
@@ -30,7 +30,7 @@ extractValues <- function(rastList, ptFile) {
 
   }
 
-  lapply(rastList,ptExtract)
+  lapply(rastList,pt_extract)
 
 
 }

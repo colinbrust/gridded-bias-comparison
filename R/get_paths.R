@@ -5,7 +5,7 @@
 
 # This function returns a list of raster images that correspond to the
 # arguments entered into the function
-getPaths <- function(time, statistic, variable) {
+get_paths <- function(time, statistic, variable) {
 
   library(magrittr)
 

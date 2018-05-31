@@ -1,19 +1,19 @@
 # dfList is a list of data frames created from extractValues.R
 # this function takes a list of data frames and returns a large data frame
 
-aggregateDFs <- function(time, stat, variable, ptFile) {
+aggregate_dfs <- function(time, stat, variable, ptFile) {
 
   # library(tibble)
   # library(tidyr)
   # library(dplyr)
-  source("./R/getPaths.R")
-  source("./R/extractValues.R")
-  source("./R/ensembleNormals.R")
-  source("./R/ensembleDiff.R")
+  source("./R/get_paths.R")
+  source("./R/extract_values.R")
+  source("./R/ensemble_normals.R")
+  source("./R/ensemble_diff.R")
   library(magrittr)
 
   # function that changes gridmet values from Kelvin to Celsius
-  changeGM <- function(dat) {
+  change_gm <- function(dat) {
 
     if (grepl("Normal", colnames(dat))== TRUE &&
        (grepl("tmax", colnames(dat)) == TRUE ||
@@ -26,12 +26,12 @@ aggregateDFs <- function(time, stat, variable, ptFile) {
     dat
   }
 
-    getPaths(time, stat, variable) %>%
-      extractValues(ptFile) %>%
+    get_paths(time, stat, variable) %>%
+      extract_values(ptFile) %>%
       do.call("cbind", .) %>%
       tibble::as_data_frame() %>%
-      changeGM() %>%
-      ensembleNormals(time, stat, variable) %>%
+      change_gm() %>%
+      ensemble_normals(time, stat, variable) %>%
       tibble::add_column("PointID" = ptFile$ORIG_FID)%>%
       tibble::add_column("ClimateDivision" = ptFile$CD) %>%
       tibble::add_column("Montana" = ptFile$Montana)%>%
@@ -51,7 +51,7 @@ aggregateDFs <- function(time, stat, variable, ptFile) {
       tidyr::separate(col = "Names",
                       sep = "_",
                       into = c("Index", "Dataset", "Time", "Variable", "Statistic")) %>%
-      ensembleDiff() %>%
+      ensemble_diff() %>%
       dplyr::mutate(EnsDiff = EnsVal - Value)
 }
 

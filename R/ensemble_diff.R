@@ -3,7 +3,7 @@
 
 # dat - the dataframe that difference from ensmeble average will be calculated for.
 
-ensembleDiff <- function(dat) {
+ensemble_diff <- function(dat) {
 
   fill <-
     dat %>%

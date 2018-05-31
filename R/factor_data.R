@@ -4,7 +4,7 @@
 # dat - dataframe to be plotted
 # time - either "Annual", "Seasonal", or "Monthly"
 
-factorData <- function(dat, time) {
+factor_data <- function(dat, time) {
 
   dat$Dataset <- factor(dat$Dataset)
 

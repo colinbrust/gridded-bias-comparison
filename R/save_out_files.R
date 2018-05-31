@@ -1,4 +1,4 @@
-source("./R/aggregateFunctions.R")
+source("./R/aggregate_functions.R")
 
 times <- c("Annual", "Seasonal", "Monthly")
 variables <- c("tmax", "tmin", "ppt")
@@ -15,7 +15,7 @@ for(i in 1:length(times)) {
 
     for(k in 1:length(stats)) {
 
-      saveFile(times[i], stats[k], variables[j], ptFile)
+      aggregate_functions(times[i], stats[k], variables[j], ptFile)
     }
   }
 }
