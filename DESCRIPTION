@@ -11,4 +11,4 @@ ByteCompile: true
 URL: https://github.com/colinbrust/GriddedPackage
 BugReports: https://github.com/colinbrust/GriddedPackage/issues
 Imports: bookdown
-
+Suggests: testthat

@@ -23,7 +23,7 @@ factor_data <- function(dat, time) {
   } else if (time == "Annual") {
 
     dat$Index <- factor(dat$Index)
-    levels(dat$Index) <- c("30-Year Annual Normal")
+    levels(dat$Index) <- c("")
     return(dat)
   }
 }

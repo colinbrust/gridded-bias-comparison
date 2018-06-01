@@ -1,6 +1,6 @@
 # This function specifies the visualization parameters for the corellograms.
 
-cor_viz <- function() {
+viz_cor <- function() {
 
   list(
     scale_fill_distiller(palette = "Reds",  direction = 1,

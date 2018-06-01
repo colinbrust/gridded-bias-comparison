@@ -46,5 +46,5 @@ make_map <- function(variable, time, stat, timeFilter = "01", ...) {
     mdt_theme_map() +
     scale_fill_distiller(name = mapTitle[3], palette = mapTitle[4]) +
     facet_wrap(~Dataset)
-}
 
+}

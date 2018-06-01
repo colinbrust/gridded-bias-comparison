@@ -1,4 +1,4 @@
-map_titles <- function(variable, time, stat, timeFilter, toSubset, deviation = FALSE) {
+titles_map <- function(variable, time, stat, timeFilter, toSubset, deviation = FALSE) {
 
   if (deviation == FALSE) {
 
