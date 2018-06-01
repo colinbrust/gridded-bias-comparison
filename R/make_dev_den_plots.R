@@ -24,6 +24,6 @@ make_dev_den_plots  <- function(variable, time, stat, ...) {
     viz_den(variable, time, plotTitle) +
     facet_wrap(~Index)
 
-  #save_plots(variable, time, stat, TRUE, "den", ...)
+  save_plots(variable, time, stat, TRUE, "den", ...)
 }
 
