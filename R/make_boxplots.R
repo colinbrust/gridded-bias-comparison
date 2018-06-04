@@ -9,6 +9,7 @@
 make_boxplots <- function(variable, time, stat, ...) {
 
   #library(feather)
+  library(magrittr)
   library(ggplot2)
   source("./R/factor_data.R")
   source("./R/titles_box_den.R")

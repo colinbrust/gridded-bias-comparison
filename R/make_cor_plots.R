@@ -4,10 +4,10 @@
 # time - "Monthly", "Seasonal" or "Annual". The time period to be evaluated
 # stat - "Normal" or "SD". The statistic used to compare datasets.
 
-correlation_plots <- function(variable, time, stat, ...) {
+make_cor_plots <- function(variable, time, stat, ...) {
 
-  source("./R/cor_viz.R")
-  source("./R/cor_titles.R")
+  source("./R/viz_cor.R")
+  source("./R/titles_cor.R")
   source("./R/factor_data.R")
   source("./R/save_plots.R")
   source("./R/cor_functions.R")
@@ -48,7 +48,7 @@ correlation_plots <- function(variable, time, stat, ...) {
 
   }
 
-  plotTitle <- cor_titles(variable, time, stat, c(...))
+  plotTitle <- titles_cor(variable, time, stat, c(...))
 
   if(time == "Seasonal" || time == "Monthly") {
 
@@ -58,7 +58,7 @@ correlation_plots <- function(variable, time, stat, ...) {
       geom_text(aes(Dataset1, Dataset2, label = round(value, 3)), color = "black",
                     family = "sans", fontface = "bold", size = 3.5) +
       labs(title = plotTitle[1], subtitle = plotTitle[2]) +
-      cor_viz() +
+      viz_cor() +
       facet_wrap(~index_names)
 
   } else if (time == "Annual") {
@@ -68,7 +68,7 @@ correlation_plots <- function(variable, time, stat, ...) {
       geom_text(aes(Dataset1, Dataset2, label = round(value, 3)), color = "black",
                 family = "sans", fontface = "bold", size = 3.5) +
       labs(title = plotTitle[1], subtitle = plotTitle[2]) +
-      cor_viz()
+      viz_cor()
 
   }
 

@@ -20,47 +20,17 @@ mdt_theme_map <- function(base_size = 6.5,
       legend.title.align = 0,
       legend.key.width = unit(0.15, "in"),
       legend.key.height = unit(0.15, "in"),
-      legend.title = element_text(
-        size = 8,
-        colour = "gray15",
-        face = "bold"
-      ),
-      legend.text = element_text(
-        family = "sans",
-        colour = "gray26",
-        size = 8,
-        face = "bold"
-      ),
+      legend.title = element_text(size = 10, colour = "gray15", face = "bold"),
+      legend.text = element_text(family = "sans", colour = "gray26", size = 10,
+                                 face = "bold"),
       plot.background = ggplot2::element_blank(),
-      plot.margin = ggplot2::margin(
-        t = 0,
-        r = 0,
-        b = 0,
-        l = 0,
-        unit = "npc"
-      ),
-      plot.title = element_text(
-        family = "sans",
-        size = 13,
-        hjust = 0.5,
-        colour = "gray15",
-        face = "bold"
-      ),
-      plot.subtitle = element_text(
-        family = "sans",
-        size = 10,
-        hjust = 0.5,
-        colour = "gray20",
-        face = "bold"
-      ),
-      strip.text = element_text(
-        family = "sans",
-        size = 8,
-        face = "bold",
-        hjust = 0.5,
-        vjust = 1
-      )
-    )
+      plot.margin = ggplot2::margin(t = 0, r = 0, b = 0, l = 0, unit = "npc"),
+      plot.title = element_text(family = "sans", size = 13, hjust = 0.5,
+                                colour = "gray15", face = "bold"),
+      plot.subtitle = element_text(family = "sans", size = 10, hjust = 0.5,
+                                   colour = "gray20", face = "bold"),
+      strip.text = element_text(family = "sans", size = 8, face = "bold",
+                                hjust = 0.5, vjust = 1))
 }
 
 # a function that specifies the color palette for a map.

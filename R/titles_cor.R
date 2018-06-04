@@ -5,7 +5,7 @@
 # stat - either "Normal", or "SD"
 # toSubset - the list of logical statements passed into the plot function
 
-cor_titles <- function(variable, time, stat, toSubset, deviation = FALSE) {
+titles_cor <- function(variable, time, stat, toSubset, deviation = FALSE) {
 
   if (deviation == FALSE) {
     if(time == "Monthly") {

@@ -12,6 +12,10 @@
 
 save_plots <- function(variable, time, stat, deviation, type, ...) {
 
+  # library(ggplot2)
+  library(magrittr)
+
+
   if (deviation) {
     dev <- "devT"
   } else {
@@ -34,25 +38,15 @@ save_plots <- function(variable, time, stat, deviation, type, ...) {
                        dev, paste0(stat, ".png"), sep = "_")
   }
 
-  if(type == "corr") {
+  if(type == "corr" || type == "map") {
 
     ggplot2::ggsave(filename = save_name, width = 14, height = 10, units = "in",
                     device = "png", dpi = "print")
 
-  } else if (type == "map") {
-
-
-
-  } else if (type == "box") {
+  } else if (type == "box" || type == "den") {
 
     ggplot2::ggsave(filename = save_name, width = 12, height = 9, units = "in",
                     device = "png", dpi = "print")
-
-  } else if (type == "den") {
-
-    ggplot2::ggsave(filename = save_name, width = 12, height = 9, units = "in",
-                    device = "png", dpi = "print")
-
   }
 
 }

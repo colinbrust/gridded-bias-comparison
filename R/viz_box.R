@@ -30,15 +30,18 @@ viz_box <- function(variable, time, plotTitle) {
             plot.subtitle = element_text(hjust = 0.5, colour = "gray20", face = "bold"),
             axis.title.x = element_text(colour = "gray26", face = "bold"),
             axis.title.y = element_text(colour = "gray26", face = "bold"),
-            legend.title = element_text(hjust = 0.5, colour="gray15", face = "bold"),
-            legend.text = element_text(colour="gray26", face = "bold"))
+            legend.title = element_text(hjust = 0.5, colour="gray15", face = "bold",
+                                        size = 10),
+            legend.text = element_text(colour="gray26", face = "bold", size = 10),
+            strip.text =    element_text(family = "sans", size = 8, face = "bold", hjust = 0.5,
+                                         vjust = 1))
     ))
 
   } else {
 
     return(list(
 
-      bscale_fill_manual(values=pptPallete),
+      scale_fill_manual(values=pptPallete),
 
       theme_minimal(),
 
@@ -48,8 +51,11 @@ viz_box <- function(variable, time, plotTitle) {
             plot.subtitle = element_text(hjust = 0.5, colour = "gray20", face = "bold"),
             axis.title.x = element_text(colour = "gray26", face = "bold"),
             axis.title.y = element_text(colour = "gray26", face = "bold"),
-            legend.title = element_text(hjust = 0.5, colour="gray15", face = "bold"),
-            legend.text = element_text(colour="gray26", face = "bold"))
+            legend.title = element_text(hjust = 0.5, colour="gray15", face = "bold",
+                                        size = 10),
+            legend.text = element_text(colour="gray26", face = "bold", size = 10),
+            strip.text =    element_text(family = "sans", size = 8, face = "bold", hjust = 0.5,
+                                         vjust = 1))
     ))
 
   }
