@@ -1,5 +1,6 @@
 # dfList is a list of data frames created from extractValues.R
-# this function takes a list of data frames and returns a large data frame
+# this function takes a list of data frames and returns a long
+# format data frame from all the list of data frames
 
 aggregate_dfs <- function(time, stat, variable, ptFile) {
 

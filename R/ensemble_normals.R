@@ -8,8 +8,6 @@
 # stat - either "Normal", or "SD"
 # variable - either "tmax", "tmin" or "ppt"
 
-
-
 ensemble_normals <- function(dat, time, stat, variable) {
 
   # library(dplyr)

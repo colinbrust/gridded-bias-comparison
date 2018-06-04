@@ -1,3 +1,15 @@
+# This function creates file names for a plot and then saves the plot out
+# to your drive.
+
+# variable - either "tmax", "tmin" or "ppt".
+# time - either "Annual", "Seasonal", or "Monthly"
+# stat - either "Normal", or "SD"
+# deviation - either TRUE or FALSE. Indicates whether or not the plot shows the
+            # deviation from the ensemble average.
+# type - the type of plot that is being made.
+# ... - a list of logical statements that can be used to refine the boxplots
+# (ClimateDivision == "WESTERN", Elevation > 2000, etc.)
+
 save_plots <- function(variable, time, stat, deviation, type, ...) {
 
   if (deviation) {

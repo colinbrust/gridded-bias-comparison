@@ -12,6 +12,8 @@ extract_values <- function(rastList, ptFile) {
   # library(sf)
   # library(velox)
 
+  # A function that uses a grid of points to extract values from an underlying
+  # raster image.
   pt_extract <- function(rastImg) {
 
 
@@ -26,7 +28,6 @@ extract_values <- function(rastList, ptFile) {
     vx$extract_points(sp = reproj) %>%
       tibble::as_tibble() %>%
       magrittr::set_colnames(c(sourceName))
-
 
   }
 

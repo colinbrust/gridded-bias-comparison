@@ -1,8 +1,11 @@
-# Function that will show how much each dataset varies from the "ensemble" mean.
+# Function that will create boxplots to show how much each dataset varies from
+# the "ensemble" mean.
 
 # variable - either "tmax", "tmin" or "ppt"
 # time - either "Annual", "Seasonal", or "Monthly"
 # stat - either "Normal", or "SD"
+# ... - a list of logical statements that can be used to refine the boxplots
+# (ClimateDivision == "WESTERN", Elevation > 2000, etc.)
 
 make_dev_boxplots <- function(variable, time, stat, ...) {
 

@@ -1,4 +1,8 @@
+# a function that will plot the Pearson's r correlation between all datasets.
 
+# variable - "tmax", "tmin" or "ppt". The variable to be evaluated
+# time - "Monthly", "Seasonal" or "Annual". The time period to be evaluated
+# stat - "Normal" or "SD". The statistic used to compare datasets.
 
 correlation_plots <- function(variable, time, stat, ...) {
 

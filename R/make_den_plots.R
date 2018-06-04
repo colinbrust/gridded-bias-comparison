@@ -6,7 +6,6 @@
 # ... - a list of logical statements that can be used to refine the boxplots
 # (ClimateDivision == "WESTERN", Elevation > 2000, etc.)
 
-
 make_den_plots <- function(variable, time, stat, ...) {
 
   #library(feather)

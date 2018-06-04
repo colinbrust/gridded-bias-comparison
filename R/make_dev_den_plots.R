@@ -1,3 +1,12 @@
+# Function that will create density plots to show how much each dataset varies
+# from the "ensemble" mean.
+
+# variable - either "tmax", "tmin" or "ppt"
+# time - either "Annual", "Seasonal", or "Monthly"
+# stat - either "Normal", or "SD"
+# ... - a list of logical statements that can be used to refine the boxplots
+# (ClimateDivision == "WESTERN", Elevation > 2000, etc.)
+
 make_dev_den_plots  <- function(variable, time, stat, ...) {
 
   #library(feather)

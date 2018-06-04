@@ -1,5 +1,6 @@
+# These are the functions that are needed to generate the correlation plots.
 
-
+# makes the matrix lower triangular
 lower_tri<-function(cormat){
 
   cormat[upper.tri(cormat)] <- NA
@@ -7,6 +8,7 @@ lower_tri<-function(cormat){
 
 }
 
+# calculates a correlation matrix. This function is to be used in purrr::map
 my_cor <- function(d){
 
   d %>%
@@ -15,6 +17,7 @@ my_cor <- function(d){
     lower_tri()
 }
 
+# converts from matrix form into tidy form
 cor_mat_tidy <- function(dat) {
 
   rNames <- rownames(dat)
@@ -26,6 +29,7 @@ cor_mat_tidy <- function(dat) {
     dplyr::filter(!is.na(value))
 }
 
+# adds a column with the names of each dataset.
 add_index_column <- function(dat) {
 
   col_name <- names(dat)

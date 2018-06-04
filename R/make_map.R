@@ -20,7 +20,6 @@ hexFile <-
   sf::read_sf() %>%
   dplyr::mutate("PointID" = as.character(ORIG_FID))
 
-
 make_map <-function(variable, time, stat, timeFilter = "01", dev = FALSE,
                     hexFile) {
     # library(feather)

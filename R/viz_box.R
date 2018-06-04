@@ -1,8 +1,15 @@
+# This function specifies how a boxplot is visualized.
+
+# variable  - "tmax", "tmin" or "ppt".
+# time      - "Monthly", "Seasonal" or "Annual"
+# plotTitle - The title of the plot.
+
 viz_box <- function(variable, time, plotTitle) {
 
   tmpPallete <- c("#5B1A18", "#D67236", "#FD6467", "#F1BB7B")
   pptPallete <- c("#D8A499", "#5B1A18", "#D67236", "#FD6467")
 
+  # function that alters how the "time" variable is put into the title.
   asSingular <- function(t) {
 
     if(t == "Monthly") {return("Month")}

@@ -1,3 +1,9 @@
+# This function specifies how a density plot is visualized.
+
+# variable  - "tmax", "tmin" or "ppt".
+# time      - "Monthly", "Seasonal" or "Annual"
+# plotTitle - The title of the plot.
+
 viz_den <- function(variable, time, plotTitle) {
 
   tmpPallete <- c("#5B1A18", "#D67236", "#FD6467", "#F1BB7B")

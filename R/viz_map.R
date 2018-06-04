@@ -1,26 +1,7 @@
 # These are a set of functions that determine the aesthetics of the maps made
 # in the "make_map" function.
 
-get_df <- function(x) {
-  out <- cbind(raster::xyFromCell(x, seq_len(raster::ncell(x))),
-               tibble::tibble(ID = raster::getValues(x))) %>%
-    tibble::as_tibble()
-
-  if (is.factor(x)) {
-    levels <- levels(x)[[1]] %>%
-      dplyr::mutate_all(.funs = funs(ordered)) %>%
-      tibble::as_tibble()
-
-    fact <- out$ID %>%
-      ordered(levels = levels(levels$ID))
-    out %<>%
-      dplyr::mutate(ID = fact) %>%
-      dplyr::left_join(levels)
-  }
-
-  return(out)
-}
-
+# function that removes a lot of the default map aesthetics
 mdt_theme_map <- function(base_size = 6.5,
                           base_family = "") {
   ggplot2::theme_bw(base_size = base_size,
@@ -82,6 +63,7 @@ mdt_theme_map <- function(base_size = 6.5,
     )
 }
 
+# a function that specifies the color palette for a map.
 pal <- function(dev, variable) {
   library(ggplot2)
 

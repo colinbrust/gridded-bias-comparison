@@ -1,9 +1,11 @@
+# this script just uses the aggregate_functions function do save out all of
+# the possible data frame combinations.
+
 source("./R/aggregate_functions.R")
 
 times <- c("Annual", "Seasonal", "Monthly")
 variables <- c("tmax", "tmin", "ppt")
 stats <- c("Normal", "SD")
-
 
 ptFile <-
   "./analysis/data/raw_data/shapefiles/ptsAttributed.shp" %>%

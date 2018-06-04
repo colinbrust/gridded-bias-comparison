@@ -1,4 +1,5 @@
-# Function that makes a title for a plot based on input parameters.
+# Function that makes a title for a density or box plot based on input
+# parameters.
 
 # variable - either "tmax", "tmin" or "ppt"
 # time - either "Annual", "Seasonal", or "Monthly"
