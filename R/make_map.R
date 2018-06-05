@@ -40,6 +40,7 @@ make_map <-function(variable, time, stat, timeFilter = "01", dev = FALSE,
     dplyr::filter(Index == timeFilter, Dataset != "Ensemble",
                   Montana == "yes") %>%
     sf::st_sf() %>%
+    dplyr::mutate(EnsDiff = EnsDiff*-1) %>%
     dplyr::mutate(Value = round(!!Value)) %>%
     dplyr::select(Dataset, Value) %>%
     dplyr::group_by(Dataset, Value) %>%

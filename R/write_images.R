@@ -49,6 +49,7 @@ write_map <- function(dat) {
 
 write_map(annTable)
 write_map(seaTable)
+write_map(monTable)
 
 #### Save box, density, and correlation plots ####
 
