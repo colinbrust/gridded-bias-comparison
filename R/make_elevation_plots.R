@@ -4,6 +4,7 @@ make_elevation_plots <- function(variable, time, stat, timeFilter = "01", ...) {
   source("./R/titles_elev.R")
   library(magrittr)
   library(ggplot2)
+  # library(cowplot)
 
   dat <- "./analysis/data/derived_data/Extracts/" %>%
     paste0(time) %>%
@@ -18,12 +19,14 @@ make_elevation_plots <- function(variable, time, stat, timeFilter = "01", ...) {
                      Q1 = as.numeric(quantile(Value)[2]),
                      Q3 = as.numeric(quantile(Value)[4]))
 
-  plotTitle <- titles_elev(variable, time, stat, timeFilter, c(...))
+  plotTitle <- titles_elev(variable, time, stat, timeFilter, c())
 
   ggplot(dat, aes(x = Elevation, y = Median, color = Dataset)) +
     geom_line() +
     geom_ribbon(aes(ymin = Q1, ymax = Q3), linetype = 2, alpha = 0) +
-    viz_elev(variable, plotTitle) +
+    viz_elev(variable, plotTitle, dat) +
     facet_wrap(~ClimateDivision)
 
 }
+
+

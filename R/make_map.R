@@ -16,7 +16,10 @@
                   # dplyr::mutate("PointID" = as.character(ORIG_FID))
 
 make_map <-function(variable, time, stat, timeFilter = "01", dev = FALSE,
-                    hexFile= hexFile) {
+                    hexFile=
+                      "./analysis/data/raw_data/shapefiles/hexFile.shp" %>%
+                      sf::read_sf() %>%
+                      dplyr::mutate("PointID" = as.character(ORIG_FID))) {
   # library(feather)
   # library(rlang)
   library(magrittr)

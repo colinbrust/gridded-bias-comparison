@@ -1,13 +1,15 @@
-viz_elev <- function(variable, plotTitle) {
+viz_elev <- function(variable, plotTitle, dat) {
 
-  tmpPallete <- c("#5B1A18", "#D67236", "#FD6467", "#F1BB7B")
-  pptPallete <- c("#D8A499", "#5B1A18", "#D67236", "#FD6467")
+  # library(RColorBrewer)
+  # library(ggplot2)
+  myColors <- c("#FFC857", "#E9724C", "#C5283D", "#481D24", "#255F85", "#F9DBBD")
+  names(myColors) <- c("TopoWx", "PRISM", "Ensemble", "Daymet", "Gridmet", "Chirps")
 
   if (variable == "tmax" || variable == "tmin") {
 
     return(list(
 
-      scale_color_manual(values=tmpPallete),
+      scale_colour_manual(name = "Dataset", values = myColors),
 
       theme_minimal(),
 
@@ -28,7 +30,7 @@ viz_elev <- function(variable, plotTitle) {
 
     return(list(
 
-      scale_color_manual(values=pptPallete),
+      scale_colour_manual(name = "Dataset", values = myColors),
 
       theme_minimal(),
 
