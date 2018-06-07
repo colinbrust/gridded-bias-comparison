@@ -2,6 +2,12 @@ make_elev_CD_plots <- function(variable, time, stat, timeFilter, CD, dev, ...) {
 
   source("./R/viz_elev.R")
   source("./R/titles_elev.R")
+  library(magrittr)
+  library(ggplot2)
+  # library(dplyr)
+  # library(rlang)
+  # library(feather)
+  # library(cowplot)
 
   if (dev)
     Value <-  rlang::sym("EnsDiff")
@@ -46,15 +52,17 @@ make_elev_CD_plots <- function(variable, time, stat, timeFilter, CD, dev, ...) {
                               ncol = 1,
                               align = "v",
                               axis = 'l') +
-    viz_all(variable, plotTitle)
+    viz_all(variable, plotTitle, dev)
 
   cowplot::plot_grid(cPlot, legend, rel_widths = c(10,1))
+
+  save_elev_plots(timeFilter, variable, time, stat, dev, CD)
 
 }
 
 viz_by_dat <- function() {
 
-  myColors <- c("#FFC857", "#E9724C", "#C5283D", "#481D24", "#255F85", "#F9DBBD")
+  myColors <- c("#FFC857", "#E9724C", "#C5283D", "#6d976d", "#255F85", "#F9DBBD")
   names(myColors) <- c("TopoWx", "PRISM", "Ensemble", "Daymet", "Gridmet", "Chirps")
 
   return(list(
@@ -67,22 +75,25 @@ viz_by_dat <- function() {
           axis.title.y = element_blank(),
           axis.text    = element_text(family = "sans", size = 7, face = "bold",
                                       hjust = 0.5, vjust = 1),
-          legend.title = element_text(colour="gray26", face = "bold", size = 10,
-                                      family = "sans"),
-          legend.text  = element_text(colour="gray26", size = 8,
-                                      family = "sans"),
+          legend.title = element_text(colour="gray15", face = "bold", size = 10,
+                                      family = "sans", hjust = 0.5),
+          legend.text  = element_text(colour="gray26", size = 10,
+                                      face = "bold"),
           strip.text   = element_text(family = "sans", size = 9, face = "bold",
                                       hjust = 0.5, vjust = 1))
   ))
 
 }
 
-viz_all <- function(variable, plotTitle) {
+viz_all <- function(variable, plotTitle, dev) {
 
   if (variable == "tmax" || variable == "tmin")
     legTitle <- "Median Temperature (C)"
   else
     legTitle <- "Median Precipitation (mm)"
+
+  if (dev)
+    legTitle <- paste(legTitle, "Deviation")
 
 
   return(list(
@@ -109,5 +120,35 @@ viz_all <- function(variable, plotTitle) {
 
 }
 
+save_elev_plots <- function(timeFilter, variable, time, stat, deviation, CD, ...) {
+
+  # library(ggplot2)
+  library(magrittr)
+
+  if (deviation)
+    dev <- "devT"
+  else
+    dev <- "devF"
+
+  if(!is.null(c(...))) {
+
+    sub_name <-
+      c(...) %>%
+      stringr::word(1) %>%
+      paste(collapse = "_")
+
+    save_name <- paste(paste0("./analysis/data/derived_data/images/", timeFilter), "elev", time, variable,
+                       stat, dev, CD, paste0(sub_name, ".png"), sep = "_")
+
+  } else {
+
+    save_name <- paste(paste0("./analysis/data/derived_data/images/", timeFilter), "elev", time, variable,
+                       dev, CD, paste0(stat, ".png"), sep = "_")
+  }
+
+  ggplot2::ggsave(filename = save_name, width = 12, height = 9, units = "in",
+                  device = "png", dpi = "print")
+
+}
 
 

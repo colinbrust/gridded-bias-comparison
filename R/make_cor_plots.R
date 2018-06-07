@@ -36,7 +36,8 @@ make_cor_plots <- function(variable, time, stat, ...) {
     add_index_column() %>%
     do.call(rbind, .) %>%
     dplyr::mutate(highlight = dplyr::if_else(Dataset1 == "Ensemble" |
-                                             Dataset2 == "Ensemble", TRUE, FALSE))
+                                             Dataset2 == "Ensemble",
+                                             TRUE, FALSE))
 
   if(time == "Monthly") {
 

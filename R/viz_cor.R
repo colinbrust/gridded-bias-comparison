@@ -4,7 +4,8 @@ viz_cor <- function() {
 
   list(
     scale_fill_distiller(palette = "Reds",  direction = 1,
-                         space = "Lab", name="Pearson's r\nCorrelation"),
+                         space = "Lab", name="Pearson's r\nCorrelation",
+                         limit = c(-0.1, 1)),
 
     scale_color_manual(values = c("white","black"), guide = F),
 
@@ -40,6 +41,8 @@ viz_cor <- function() {
                                   colour = "gray15", face = "bold"),
         plot.subtitle = element_text(family = "sans", size = 10, hjust = 0.5,
                                      colour = "gray20", face = "bold"))
+
+
   )
 
 }

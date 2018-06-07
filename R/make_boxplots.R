@@ -13,23 +13,22 @@ make_boxplots <- function(variable, time, stat, ...) {
   library(ggplot2)
   source("./R/factor_data.R")
   source("./R/titles_box_den.R")
-  source("./R/viz_box.R")
+  source("./R/viz_den_box.R")
   source("./R/save_plots.R")
 
   plotTitle <- titles_box_den(variable, time, stat, c(...))
 
-  dat <- "./analysis/data/derived_data/extracts/" %>%
+  "./analysis/data/derived_data/extracts/" %>%
     paste0(time)%>%
     paste(variable, paste0(stat, ".feather"), sep = "_") %>%
     feather::read_feather() %>%
     dplyr::filter(Montana == "yes") %>%
     dplyr::filter(Dataset != "Ensemble") %>%
     dplyr::filter_(...) %>%
-    factor_data(time)
-
-  ggplot(dat, aes(x = Index, y = Value, fill = Dataset)) +
-    geom_boxplot(color = "gray11") +
-    viz_box(variable, time, plotTitle)
+    factor_data(time) %>%
+    ggplot(aes(x = Index, y = Value, fill = Dataset)) +
+      geom_boxplot(color = "gray11") +
+      viz_den_box(variable, time, plotTitle, "box")
 
   save_plots(variable, time, stat, FALSE, "box", ...)
 }
