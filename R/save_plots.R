@@ -29,12 +29,12 @@ save_plots <- function(variable, time, stat, deviation, type, ...) {
       stringr::word(1) %>%
       paste(collapse = "_")
 
-    save_name <- paste(paste0("./analysis/data/derived_data/images/", type), time, variable,
+    save_name <- paste(paste0("./analysis/figures/", type), time, variable,
                        stat, dev, paste0(sub_name, ".png"), sep = "_")
 
   } else {
 
-    save_name <- paste(paste0("./analysis/data/derived_data/images/", type), time, variable,
+    save_name <- paste(paste0("./analysis/figures/", type), time, variable,
                        dev, paste0(stat, ".png"), sep = "_")
   }
 

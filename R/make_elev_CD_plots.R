@@ -9,10 +9,11 @@ make_elev_CD_plots <- function(variable, time, stat, timeFilter, CD, dev, ...) {
   # library(feather)
   # library(cowplot)
 
-  if (dev)
+  if (dev) {
     Value <-  rlang::sym("EnsDiff")
-  else
+  } else {
     Value <-  rlang::sym("Value")
+  }
 
   dat <- "./analysis/data/derived_data/Extracts/" %>%
     paste0(time) %>%

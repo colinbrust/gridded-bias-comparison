@@ -3,5 +3,6 @@
 .RData
 GriddedPackage.Rproj
 */data/*
+*/figures/*
 packrat/lib*/
 Rplots.pdf

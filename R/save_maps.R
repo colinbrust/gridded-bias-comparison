@@ -21,7 +21,7 @@ save_maps <- function(timeFilter, variable, time, stat, deviation) {
     dev <- "devF"
   }
 
-  save_name <- paste(paste0("./analysis/data/derived_data/images/", "map"), timeFilter,
+  save_name <- paste(paste0("./analysis/data/figures/", "map"), timeFilter,
                      time, variable, dev, paste0(stat, ".png"), sep = "_")
 
   ggplot2::ggsave(filename = save_name, width = 14, height = 10, units = "in",

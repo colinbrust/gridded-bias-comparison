@@ -1,11 +1,8 @@
-# This function specifies the visualization parameters for the corellograms.
 
-viz_cor <- function() {
+
+viz_cor_mean <- function() {
 
   list(
-    scale_fill_distiller(palette = "Reds",  direction = 1,
-                         space = "Lab", name="Pearson's r\nCorrelation",
-                         limit = c(-0.1, 1)),
 
     scale_color_manual(values = c("white","black"), guide = F),
 
@@ -27,8 +24,8 @@ viz_cor <- function() {
       panel.background = element_blank(),
       axis.ticks = element_blank(),
       legend.justification = c(0, 0),
-      legend.position = c(1, 0.35),
-      legend.direction = "vertical",
+      legend.position = c(0.15, -0.3),
+      legend.direction = "horizontal",
       legend.title = element_text(family = "sans", colour="black",
                                   size = 10, face = "bold"),
       legend.text = element_text(family = "sans", colour="black",
@@ -37,12 +34,11 @@ viz_cor <- function() {
       strip.text = element_text(family = "sans", size = 9.5, face = "bold",
                                 hjust = 0.5, vjust = 1),
       plot.background = ggplot2::element_blank(),
-      plot.title = element_text(family = "sans", size = 13, hjust = 0.5,
+      plot.title = element_text(family = "sans", size = 13, hjust = -0.5,
                                 colour = "gray15", face = "bold"),
       plot.subtitle = element_text(family = "sans", size = 10, hjust = 0.5,
                                    colour = "gray20", face = "bold"))
 
 
   )
-
 }

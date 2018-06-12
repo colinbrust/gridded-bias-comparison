@@ -26,6 +26,7 @@ make_dev_boxplots <- function(variable, time, stat, ...) {
     dplyr::filter(Montana == "yes") %>%
     dplyr::filter(Dataset != "Ensemble") %>%
     dplyr::filter_(...) %>%
+    dplyr::mutate(EnsDiff = EnsDiff*-1) %>%
     factor_data(time) %>%
     ggplot(aes(x = Index, y = EnsDiff, fill = Dataset)) +
       geom_boxplot(color = "gray11") +

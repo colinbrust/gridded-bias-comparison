@@ -26,6 +26,7 @@ make_dev_den_plots  <- function(variable, time, stat, ...) {
     dplyr::filter(Montana == "yes") %>%
     dplyr::filter(Dataset != "Ensemble") %>%
     dplyr::filter_(...) %>%
+    dplyr::mutate(EnsDiff = EnsDiff*-1) %>%
     factor_data(time) %>%
     ggplot2::ggplot(aes(x = EnsDiff,  color = Dataset)) +
       geom_density(size = 1) +
