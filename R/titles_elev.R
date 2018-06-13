@@ -9,45 +9,40 @@ titles_elev <-function(variable, time, stat, timeFilter, CD, dev, toSubset) {
     var2 = "Precipitation"
 
   if (dev)
-    dev = "Ensemble Deviation"
+    dev = "Ensemble Anomaly"
   else
     dev = ""
 
   if (time == "Monthly") {
     plotTitle <- tools::toTitleCase(paste(
-                    "Elevation vs",
-                    var2,
-                    "in Montana's\n",
-                    CD,
-                    "Climate Division for",
-                    month.name[as.numeric(timeFilter)],
-                    variable,
-                    stat,
-                    dev))
+                  month.name[as.numeric(timeFilter)],
+                  variable,
+                  stat,
+                  "by elevation in Montana's",
+                  CD,
+                  "Climate Division\n",
+                  dev))
 
   } else if (time == "Seasonal") {
     seasons <- c("Winter", "Spring", "Summer", "Autumn")
     plotTitle <- tools::toTitleCase(paste(
-                    "Elevation vs",
-                    var2,
-                    "in Montana's\n",
-                    CD,
-                    "Climate Division for",
-                    seasons[as.numeric(timeFilter)],
-                    variable,
-                    stat,
-                    dev))
+                  seasons[as.numeric(timeFilter)],
+                  variable,
+                  stat,
+                  "by elevation in Montana's",
+                  CD,
+                  "Climate Division\n",
+                  dev))
 
   } else if (time == "Annual") {
     plotTitle <- tools::toTitleCase(paste(
-                    "Elevation vs",
-                    var2,
-                    "in Montana's\n",
-                    CD,
-                    "Climate Division for Annual",
-                    variable,
-                    stat,
-                    dev))
+                  "Annual",
+                  variable,
+                  stat,
+                  "by elevation in Montana's",
+                  CD,
+                  "Climate Division\n",
+                  dev))
   }
 
   if(length(toSubset) == 0) {

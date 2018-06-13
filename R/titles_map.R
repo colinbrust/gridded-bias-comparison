@@ -2,60 +2,59 @@
 # inputs are the same as the inputs for the "make_map" function.
 
 titles_map <-
-  function(variable,
-           time,
-           stat,
-           timeFilter,
-           deviation = FALSE) {
+  function(variable, time, stat, timeFilter, deviation = FALSE) {
+
     if (deviation == FALSE) {
+
       if (time == "Monthly") {
+
         plotTitle <-
-          tools::toTitleCase(paste("Map of", month.name[as.numeric(timeFilter)],
+          tools::toTitleCase(paste(month.name[as.numeric(timeFilter)],
                                    variable, stat))
 
       } else if (time == "Seasonal") {
+
         seasons <- c("Winter", "Spring", "Summer", "Autumn")
         plotTitle <-
-          tools::toTitleCase(paste("Map of", seasons[as.numeric(timeFilter)],
+          tools::toTitleCase(paste(seasons[as.numeric(timeFilter)],
                                    variable, stat))
 
       } else if (time == "Annual") {
         plotTitle <-
-          tools::toTitleCase(paste("Map of the 30-year", variable, stat))
+          tools::toTitleCase(paste(time, variable, stat))
       }
 
     } else if (deviation == TRUE) {
+
       if (time == "Monthly") {
         plotTitle <-
           tools::toTitleCase(
             paste(
-              "Map of",
               month.name[as.numeric(timeFilter)],
-              "deviation from dataset average for",
               variable,
-              stat
+              stat,
+              "Anomaly from Ensemble Average"
             )
           )
-
       } else if (time == "Seasonal") {
+
         seasons <- c("Winter", "Spring", "Summer", "Autumn")
         plotTitle <-
           tools::toTitleCase(paste(
-            "Map of",
             seasons[as.numeric(timeFilter)],
-            "deviation from dataset average for",
             variable,
-            stat
+            stat,
+            "Anomaly from Ensemble Average"
           ))
 
       } else if (time == "Annual") {
+
         plotTitle <-
           tools::toTitleCase(paste(
-            "Map of",
             time,
-            "deviation from dataset average for",
             variable,
-            stat
+            stat,
+            "Anomaly from Ensemble Average"
           ))
       }
 

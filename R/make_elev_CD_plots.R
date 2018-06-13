@@ -138,12 +138,12 @@ save_elev_plots <- function(timeFilter, variable, time, stat, deviation, CD, ...
       stringr::word(1) %>%
       paste(collapse = "_")
 
-    save_name <- paste(paste0("./analysis/data/derived_data/images/", timeFilter), "elev", time, variable,
+    save_name <- paste(paste0("./analysis/figures/", timeFilter), "elev", time, variable,
                        stat, dev, CD, paste0(sub_name, ".png"), sep = "_")
 
   } else {
 
-    save_name <- paste(paste0("./analysis/data/derived_data/images/", timeFilter), "elev", time, variable,
+    save_name <- paste(paste0("./analysis/figures/", timeFilter), "elev", time, variable,
                        dev, CD, paste0(stat, ".png"), sep = "_")
   }
 

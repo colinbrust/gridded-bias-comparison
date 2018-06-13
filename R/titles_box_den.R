@@ -11,15 +11,15 @@ titles_box_den <- function(variable, time, stat, toSubset, deviation = FALSE) {
   if (deviation == FALSE) {
     if(time == "Monthly") {
 
-      plotTitle <- tools::toTitleCase(paste("Plot of", variable, stat, "by Month"))
+      plotTitle <- tools::toTitleCase(paste(variable, stat, "by Month"))
 
     } else if (time == "Seasonal") {
 
-      plotTitle <- tools::toTitleCase(paste("Plot of", variable, stat, "by Season"))
+      plotTitle <- tools::toTitleCase(paste(variable, stat, "by Season"))
 
     } else if (time == "Annual") {
 
-      plotTitle <- tools::toTitleCase(paste("Plot of the 30-year", variable, stat))
+      plotTitle <- tools::toTitleCase(paste("Annual", variable, stat))
     }
 
     if(!is.null(toSubset)) {
@@ -36,8 +36,8 @@ titles_box_den <- function(variable, time, stat, toSubset, deviation = FALSE) {
 
   } else {
 
-    plotTitle <- tools::toTitleCase(paste("Plot of", time, "deviation from dataset average for",
-                                            variable, stat))
+    plotTitle <- tools::toTitleCase(paste(time, variable, stat,
+                                          "Anomaly from Ensemble Average"))
 
     if(!is.null(toSubset)) {
 
