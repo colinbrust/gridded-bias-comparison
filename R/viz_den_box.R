@@ -1,4 +1,4 @@
-viz_den_box <- function(variable, time, plotTitle, type) {
+viz_den_box <- function(variable, time, plotTitle, type, dev) {
 
   myColors <- c("#FFC857", "#E9724C", "#C5283D", "#6d976d", "#255F85", "#F9DBBD")
   names(myColors) <- c("TopoWx", "PRISM", "Ensemble", "Daymet", "Gridmet", "Chirps")
@@ -10,10 +10,19 @@ viz_den_box <- function(variable, time, plotTitle, type) {
     else if(t == "Annual") {return("30-Year Normal")}
   }
 
-  if (variable == "tmax" || variable == "tmin")
+  if (variable == "tmax" || variable == "tmin") {
     legTitle <- "Temperature (C)"
-  else
+    units <- c("Temperature", "(C)")
+  } else {
+
     legTitle <- "Precipitation (mm)"
+    units <- c("Precipitation", "(mm)")
+
+  }
+
+  if (dev)
+    legTitle <- paste(units[1], "Anomaly", units[2])
+
 
   return(list(
 

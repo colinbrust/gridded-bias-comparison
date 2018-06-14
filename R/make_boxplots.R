@@ -6,7 +6,7 @@
 # ... - a list of logical statements that can be used to refine the boxplots
       # (ClimateDivision == "WESTERN", Elevation > 2000, etc.)
 
-make_boxplots <- function(variable, time, stat, ...) {
+make_boxplots <- function(variable, time, stat, dev, ...) {
 
   #library(feather)
   library(magrittr)
@@ -16,7 +16,13 @@ make_boxplots <- function(variable, time, stat, ...) {
   source("./R/viz_den_box.R")
   source("./R/save_plots.R")
 
-  plotTitle <- titles_box_den(variable, time, stat, c(...))
+  plotTitle <- titles_box_den(variable, time, stat, c(...), dev)
+
+  if (dev) {
+    Value <-  rlang::sym("EnsDiff")
+  } else {
+    Value <-  rlang::sym("Value")
+  }
 
   "./analysis/data/derived_data/extracts/" %>%
     paste0(time)%>%
@@ -26,9 +32,9 @@ make_boxplots <- function(variable, time, stat, ...) {
     dplyr::filter(Dataset != "Ensemble") %>%
     dplyr::filter_(...) %>%
     factor_data(time) %>%
-    ggplot(aes(x = Index, y = Value, fill = Dataset)) +
+    ggplot(aes(x = Index, y = !!Value, fill = Dataset)) +
       geom_boxplot(color = "gray11") +
-      viz_den_box(variable, time, plotTitle, "box")
+      viz_den_box(variable, time, plotTitle, "box", dev)
 
-  save_plots(variable, time, stat, FALSE, "box", ...)
+  save_plots(variable, time, stat, dev, "box", ...)
 }

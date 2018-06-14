@@ -41,7 +41,7 @@ pal <- function(dev, variable) {
     if (variable == "tmin" || variable == "tmax") {
       return(list(
         scale_fill_gradient2(
-          name = "Temperature (C)",
+          name = "Temperature\nAnomaly (C)",
           high = "#ff0101",
           low = "#014ea8"
         )
@@ -50,7 +50,7 @@ pal <- function(dev, variable) {
     } else {
       return(list(
         scale_fill_gradient2(
-          name = "Precipitation (mm)",
+          name = "Precipitation\nAnomaly (mm)",
           high = "#ff0101",
           low = "#014ea8"
         )

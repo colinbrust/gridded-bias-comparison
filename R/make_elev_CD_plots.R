@@ -88,14 +88,20 @@ viz_by_dat <- function() {
 
 viz_all <- function(variable, plotTitle, dev) {
 
-  if (variable == "tmax" || variable == "tmin")
+  if (variable == "tmax" || variable == "tmin") {
+
     legTitle <- "Median Temperature (C)"
-  else
+    units <- c("Temperature", "(C)")
+
+  } else {
+
     legTitle <- "Median Precipitation (mm)"
+    units <- c("Precipitation", "(mm)")
+
+  }
 
   if (dev)
-    legTitle <- paste(legTitle, "Deviation")
-
+    legTitle <- paste(units[1], "Anomaly", units[2])
 
   return(list(
 

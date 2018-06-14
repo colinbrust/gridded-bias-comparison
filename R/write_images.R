@@ -59,15 +59,14 @@ library(parallel)
 vars    <- c("tmax", "tmin", "ppt")
 time    <- c("Monthly", "Seasonal", "Annual")
 stat    <- c("Normal", "SD")
+dev     <- c(TRUE, FALSE)
 
-expand.grid(vars, time, stat, stringsAsFactors = F) %>%
+expand.grid(vars, time, stat, dev, stringsAsFactors = F) %>%
   tibble::as_tibble() %>%
-  dplyr::rename(var = Var1, time = Var2, stat = Var3)-> plotTable
+  dplyr::rename(var = Var1, time = Var2, stat = Var3, dev = Var4)-> plotTable
 
-bpF <- c("./R/make_boxplots.R", "make_boxplots")
-bpT <- c("./R/make_dev_boxplots.R", "make_dev_boxplots")
-dpF <- c("./R/make_den_plots.R", "make_den_plots")
-dpT <- c("./R/make_dev_den_plots.R", "make_dev_den_plots")
+bp <- c("./R/make_boxplots.R", "make_boxplots")
+dp <- c("./R/make_den_plots.R", "make_den_plots")
 cor <- c("./R/make_cor_plots.R", "make_cor_plots")
 
 
@@ -89,11 +88,9 @@ write_plot <- function(dat, pFun) {
 
 }
 
-write_plot(plotTable, bpF)
-write_plot(plotTable, bpT)
-write_plot(plotTable, dpF)
-write_plot(plotTable, dpT)
-write_plot(plotTable, cor)
+write_plot(plotTable, bp)
+write_plot(plotTable, dp)
+#write_plot(plotTable, cor)
 
 #### Save Elevation Plots ####
 library(magrittr)
@@ -145,3 +142,36 @@ write_elev <- function(dat) {
 write_elev(annTable)
 write_elev(seaTable)
 write_elev(monTable)
+
+#### Save Elevation-Map Plots ####
+
+library(magrittr)
+library(foreach)
+library(parallel)
+
+elevTable <- expand.grid(c("Temperature", "Precipitation"),
+                         c("Normal", "SD"),
+                         c("SOUTHWESTERN", "SOUTH CENTRAL", "SOUTHEASTERN",
+                           "WESTERN", "CENTRAL", "NORTHEASTERN",
+                           "NORTH CENTRAL")) %>%
+  tibble::as_tibble()%>%
+  dplyr::rename(var = Var1, stat = Var2, CD = Var3)
+
+write_elev_map <- function(dat) {
+
+  cl <- parallel::makeCluster(parallel::detectCores() - 2)
+  doParallel::registerDoParallel(cl)
+
+  foreach(i = 1:nrow(dat)) %dopar% {
+
+    source("./R/make_elev_agg_plots.R")
+
+    make_elev_agg_plots(dat$var[i], dat$stat[i], dat$CD[i])
+
+  }
+
+  stopCluster(cl)
+
+}
+
+write_elev_map(elevTable)

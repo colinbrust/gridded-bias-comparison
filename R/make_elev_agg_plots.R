@@ -10,9 +10,14 @@ make_elev_agg_plots <- function(variable, stat, CD) {
 
   if(variable == "Temperature") {
     tmpEval = "tmax"
+    ylabel = "Median Temperature(C)"
   } else {
-    tmpEval = "Precipitation"
+    tmpEval = "ppt"
+    ylabel = "Median Precipitation(mm)"
   }
+
+  save_name <- paste("./analysis/figures/elev_map_Annual", variable,
+                     stat, paste0(CD, ".png"), sep = "_")
 
   plot_title <- paste("Annual",
                       variable,
@@ -61,8 +66,8 @@ make_elev_agg_plots <- function(variable, stat, CD) {
   }
 
   if(variable == "Temperature") {
-    plot_colors <- c("#ffaa01", "#8fabbe", "#ff0101")
-    names(plot_colors) <- c("tmin_median", "tmean_median", "tmax_median")
+    plot_colors <- c("#ff0101", "#8fabbe", "#ffaa01")
+    names(plot_colors) <- c("tmax_median", "tmean_median", "tmin_median")
     color_names <- c("tmax", "tmean", "tmin")
   } else {
     plot_colors = "#4f63dd"
@@ -71,11 +76,14 @@ make_elev_agg_plots <- function(variable, stat, CD) {
   }
 
   dat2$Dataset <- factor(dat2$Dataset)
+  dat2$var_type <- factor(dat2$var_type)
 
   plots <- ggplot(data = dat2, aes(x = Elevation, y = median, colour = var_type)) +
     geom_line(size = 1) +
-    scale_color_manual(name = "Variable", values = myColors,
-                       labels = c("tmin", "tmax", "tmean")) +
+    scale_color_manual(name = "Variable", values = plot_colors,
+                       labels = color_names) +
+    ylab(ylabel) +
+    theme_minimal() +
     theme(plot.title = element_text(hjust = 0.5, colour = "gray15", face = "bold"),
           plot.subtitle = element_text(hjust = 0.5, colour = "gray20", face = "bold"),
           axis.title.x =  element_text(colour = "gray26", face = "bold"),
@@ -103,7 +111,8 @@ make_elev_agg_plots <- function(variable, stat, CD) {
                     axis = 'l',
                     rel_heights = c(1,4))
 
-
+  ggplot2::ggsave(filename = save_name, width = 9, height = 12, units = "in",
+                  device = "png", dpi = "print")
 }
 
 viz_elev_agg <- function(base_size = 6.5,
