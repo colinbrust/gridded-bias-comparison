@@ -41,47 +41,45 @@ make_elev_agg_plots <- function(variable, stat, CD) {
       feather::read_feather() %>%
       dplyr::filter(Montana == "yes", ClimateDivision == CD,
                     Dataset != "Ensemble") %>%
-      dplyr::select(Value, PointID, Dataset) %>%
-      dplyr::rename("tmin" = Value) %>%
-      dplyr::full_join(dat, by = c("PointID", "Dataset")) %>%
-      dplyr::rename("tmax" = Value) %>%
-      dplyr::mutate("tmean" = (tmin + tmax)/2) %>%
+      dplyr::rename(tmin = Value) %>%
+      tibble::add_column(tmax = dat$Value) %>%
+      dplyr::mutate(tmean = (tmin + tmax)/2) %>%
+      tidyr::gather(key = Variable, value = Value, tmin, tmax, tmean) %>%
       dplyr::mutate(ElevBin = dplyr::ntile(Elevation, 100)) %>%
-      dplyr::group_by(ElevBin, Dataset) %>%
-      dplyr::summarise(tmin_median = median(tmin, na.rm = T),
-                       tmean_median = median(tmean, na.rm = T),
-                       tmax_median = median(tmax, na.rm = T),
-                       Elevation = max(Elevation)) %>%
-      tidyr::gather(key = var_type, value = median,
-                    tmin_median, tmean_median, tmax_median)
+      dplyr::group_by(ElevBin, Dataset, Variable) %>%
+      dplyr::summarise(median = median(Value, na.rm = T),
+                       Q1 = as.numeric(quantile(Value)[2]),
+                       Q3 = as.numeric(quantile(Value)[4]),
+                       Elevation = max(Elevation))
+
   } else {
 
     dat2 <- dat %>%
       dplyr::mutate(ElevBin = dplyr::ntile(Elevation, 100)) %>%
-      dplyr::group_by(ElevBin, Dataset) %>%
-      dplyr::summarise(ppt_median = median(Value, na.rm = T),
-                       Elevation = max(Elevation)) %>%
-      tidyr::gather(key = var_type, value = median, ppt_median)
+      dplyr::group_by(ElevBin, Dataset, Variable) %>%
+      dplyr::summarise(median = median(Value, na.rm = T),
+                       Q1 = as.numeric(quantile(Value)[2]),
+                       Q3 = as.numeric(quantile(Value)[4]),
+                       Elevation = max(Elevation))
 
   }
 
   if(variable == "Temperature") {
     plot_colors <- c("#ff0101", "#8fabbe", "#ffaa01")
-    names(plot_colors) <- c("tmax_median", "tmean_median", "tmin_median")
-    color_names <- c("tmax", "tmean", "tmin")
+    names(plot_colors) <- c("tmax", "tmean", "tmin")
   } else {
     plot_colors = "#4f63dd"
-    names(plot_colors) = "ppt_median"
-    color_names <- "ppt"
+    names(plot_colors) = "ppt"
   }
 
   dat2$Dataset <- factor(dat2$Dataset)
-  dat2$var_type <- factor(dat2$var_type)
+  dat2$Variable <- factor(dat2$Variable)
 
-  plots <- ggplot(data = dat2, aes(x = Elevation, y = median, colour = var_type)) +
+  plots <- ggplot(data = dat2, aes(x = Elevation, y = median, colour = Variable)) +
     geom_line(size = 1) +
-    scale_color_manual(name = "Variable", values = plot_colors,
-                       labels = color_names) +
+    geom_ribbon(aes(ymin = Q1, ymax = Q3, fill = Variable), linetype = 2, alpha = 0.1) +
+    scale_color_manual(name = "Median\nand IQR", values = plot_colors) +
+    scale_fill_manual(values = plot_colors, guide = FALSE) +
     ylab(ylabel) +
     theme_minimal() +
     theme(plot.title = element_text(hjust = 0.5, colour = "gray15", face = "bold"),
@@ -89,8 +87,10 @@ make_elev_agg_plots <- function(variable, stat, CD) {
           axis.title.x =  element_text(colour = "gray26", face = "bold"),
           axis.title.y =  element_text(colour = "gray26", face = "bold"),
           legend.position = "bottom",
-          legend.title = element_text(colour = "gray26", face = "bold"),
-          legend.text = element_text(colour = "gray26", face = "bold")) +
+          legend.title = element_text(colour = "gray26", face = "bold", vjust = 2),
+          legend.text = element_text(colour = "gray26", face = "bold"),
+          strip.text = element_text(family = "sans", size = 8, face = "bold",
+                                    hjust = 0.5, vjust = 1)) +
     facet_wrap(~Dataset, ncol = 1)
 
   CDs <- "./analysis/data/raw_data/shapefiles/CDs.shp" %>%
