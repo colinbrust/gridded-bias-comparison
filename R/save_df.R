@@ -2,7 +2,7 @@
 
 # DF is the output of aggregateDFs function.
 
-save_df <- function(DF) {
+save_df <- function(DF, type) {
 
   # library(feather)
   # library(dplyr)
@@ -11,10 +11,13 @@ save_df <- function(DF) {
                  paste(
                  dplyr::select(DF, "Time")[[1]][1],
                  dplyr::select(DF, "Variable")[[1]][1],
-                 dplyr::select(DF, "Statistic")[[1]][1], sep = "_"), ".feather")
+                 dplyr::select(DF, "Statistic")[[1]][1], sep = "_"), ".", type)
 
-
-  feather::write_feather(DF, name)
+  if(type == "feather") {
+    feather::write_feather(DF, name)
+  } else if (type == "Rds") {
+    saveRDS(DF, name)
+  }
 
 
 }

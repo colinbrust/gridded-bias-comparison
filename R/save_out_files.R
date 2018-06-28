@@ -7,6 +7,8 @@ times <- c("Annual", "Seasonal", "Monthly")
 variables <- c("tmax", "tmin", "ppt")
 stats <- c("Normal", "SD")
 
+type = "Rds"
+
 ptFile <-
   "./analysis/data/raw_data/shapefiles/ptsAttributed.shp" %>%
   sf::read_sf()
@@ -17,7 +19,7 @@ for(i in 1:length(times)) {
 
     for(k in 1:length(stats)) {
 
-      aggregate_functions(times[i], stats[k], variables[j], ptFile)
+      aggregate_functions(times[i], stats[k], variables[j], ptFile, type)
     }
   }
 }
