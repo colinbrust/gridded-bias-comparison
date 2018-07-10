@@ -98,5 +98,5 @@ crop_prism <- function(new_dir, aoi, variable) {
 
 }
 
-download_prism("2017-09-01", "2017-10-01", "tmax") %>%
-  crop_prism(aoi = aoi, variable = "tmax")
+download_prism("2017-09-01", "2017-10-01", "tmin") %>%
+  crop_prism(aoi = aoi, variable = "tmin")

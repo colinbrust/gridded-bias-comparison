@@ -10,18 +10,14 @@ GEE_multi_to_daily <- function(directory = "./analysis/data/raw_data/daily_data"
   library(dplyr)
   library(stringr)
 
-  multis <- list.files(directory, full.names = T, pattern = ".tif")
+  multis <- list.files(directory, full.names = T, pattern = "daymet_tmin")
 
   new_dir <- paste0(directory, "/",
                     tools::file_path_sans_ext(basename(multis)))
 
-  lapply(new_dir, dir.create)
+  lapply(new_dir, make_dir)
 
   fnames <- lapply(multis, image_names)
-
-  print(length(multis))
-  print(length(new_dir))
-  print(length(fnames))
 
   mapply(daily_images, multiband = multis, dirs = new_dir, fnames = fnames)
 
@@ -51,14 +47,16 @@ image_names <- function(multiband) {
 
 daily_images <- function(multiband, dirs, fnames) {
 
+  img <- raster::stack(multiband)
+
   for(i in 1:length(fnames)) {
 
     img_name <- paste0(dirs, "/", fnames[i], ".tif")
 
-    img <- raster::raster(multiband, band = i)
-    img[is.na(img)] <- -9999
+    img_use <- img[[i]]
+    img_use[is.na(img_use)] <- -9999
 
-    raster::writeRaster(img,
+    raster::writeRaster(img_use,
                         filename = img_name,
                         format = "GTiff")
 
@@ -66,4 +64,17 @@ daily_images <- function(multiband, dirs, fnames) {
 
   }
 
+}
+
+make_dir <- function(fp) {
+
+  if(!file.exists(fp)) {
+
+    dir.create(fp)
+
+  } else {
+
+    unlink(fp, recursive = TRUE)
+    dir.create(fp)
+  }
 }

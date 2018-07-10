@@ -29,7 +29,7 @@ make_den_plots <- function(variable, time, stat, dev, ...) {
   }
 
   "./analysis/data/derived_data/extracts/" %>%
-    paste0(time)%>%
+    paste0(time) %>%
     paste(variable, paste0(stat, ".feather"), sep = "_") %>%
     feather::read_feather() %>%
     dplyr::filter(Montana == "yes") %>%
