@@ -1,7 +1,7 @@
 #This function downloads gridded climate data from the PRISM http site.
 
 # start_date - Earliest date to download data from. In format "YYYY-MM-DD".
-# end_date - Latest date to download data from. In format "YYYY-MM-DD".
+# end_date - Day after latest date to download data from. In format "YYYY-MM-DD".
 # variable - either "tmax", "tmin", "tmean", or "ppt"
 # aoi - a shapefile that contains the boundaries to which you want to clip
       # the image.
@@ -18,7 +18,8 @@ download_prism <- function(start_date, end_date, variable) {
 
   dates <- seq(lubridate::as_date(start_date),
                lubridate::as_date(end_date), 1) %>%
-    gsub("-", "", .)
+    gsub("-", "", .) %>%
+    head(-1)
 
   new_dir <- paste0("./analysis/data/raw_data/daily_data/prism_", variable) %>%
                     paste(dates[1], tail(dates,1), sep = "_")
@@ -98,5 +99,25 @@ crop_prism <- function(new_dir, aoi, variable) {
 
 }
 
-download_prism("2017-09-01", "2017-10-01", "tmin") %>%
-  crop_prism(aoi = aoi, variable = "tmin")
+stack_images <- function(start_date, end_date, variable) {
+
+  path_name <- paste0("./analysis/data/raw_data/daily_data/prism_", variable) %>%
+    paste(
+      gsub("-", "", start_date),
+      gsub("-", "", end_date),
+    sep = "_")
+
+  raster_stack <-
+    path_name %>%
+    list.files(full.names = T) %>%
+    lapply(raster::raster) %>%
+    raster::stack(quick = T) %>%
+    raster::writeRaster(filename = paste0(path_name, ".tif"),
+                        format = "GTiff")
+
+}
+
+download_prism("2017-09-01", "2017-10-01", "ppt") %>%
+  crop_prism(aoi = aoi, variable = "ppt")
+
+stack_images("2017-09-01", "2017-10-01", "tmax")

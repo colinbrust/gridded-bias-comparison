@@ -12,7 +12,7 @@ lower_tri<-function(cormat){
 my_cor <- function(d){
 
   d %>%
-    dplyr:::select(-Index) %>%
+    dplyr::select(-Index) %>%
     cor(method = "pearson") %>%
     lower_tri()
 }
