@@ -6,7 +6,6 @@ arrange_data <- function(start_date, end_date, variable) {
   library(tidyr)
   library(velox)
   library(ggplot2)
-  library(ggpmisc)
 
   # start_date = "2017-09-01"
   # end_date = "2017-10-01"
@@ -21,11 +20,12 @@ arrange_data <- function(start_date, end_date, variable) {
                     full.names = T,
                     pattern = ".tif") %>%
     grep(variable, ., value = TRUE) %>%
-    lapply(extract_grid_vals) %>%
-    dplyr::filter(dates %in% analysis_date) %>%
+    lapply(extract_grid_vals, variable = variable) %>%
     dplyr::bind_rows() %>%
+    dplyr::bind_rows(bind_mes_rows(variable)) %>%
+    dplyr::filter(date %in% analysis_dates) %>%
     dplyr::filter(!is.na(mesonet_value)) %>%
-    dplyr::mutate(diff_value = grid_value-mesonet_value,
+    dplyr::mutate(diff_value = value-mesonet_value,
                   station = factor(station),
                   dataset = factor(dataset))
 }
@@ -36,9 +36,12 @@ direct_plot <- function(start_date, end_date, variable) {
                       "from", start_date, "to", end_date)
 
   arrange_data(start_date, end_date, variable) %>%
-    ggplot2::ggplot(aes(x = grid_value, y = mesonet_value, color = dataset)) +
+    dplyr::filter(dataset != "mesonet") %>%
+    ggplot2::ggplot(aes(x = value, y = mesonet_value, color = dataset)) +
     geom_point() +
+    geom_abline(intercept = 0, colour = "red", size = 1) +
     viz_mesonet(variable, plot_title, "direct") +
+    coord_fixed() +
     facet_wrap(~station)
 
 }
@@ -49,33 +52,60 @@ time_plot <- function(start_date, end_date, variable) {
                       start_date, "to", end_date)
 
   arrange_data(start_date, end_date, variable) %>%
+    dplyr::filter(dataset != "mesonet") %>%
     ggplot(aes(x = date, y = diff_value, color = dataset)) +
-      geom_line(size = 1) +
+      geom_line(size = 0.5) +
       viz_mesonet(variable, plot_title, "time") +
+      geom_hline(yintercept=0, colour="red", size=1)+
       facet_wrap(~station)
+}
+
+raw_time_plot <- function(start_date, end_date, variable) {
+
+  library(magrittr)
+
+  plot_title <- paste("Mesonet and Gridded", variable,  "Values\nfrom",
+                      start_date, "to", end_date)
+
+  arrange_data(start_date, end_date, variable) %>%
+    ggplot(aes(x = date, y = value, color = dataset)) +
+    geom_line(size = 0.5) +
+    viz_mesonet(variable, plot_title, "raw_time") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    facet_wrap(~station) +
+    ylim(0,50)
+
 }
 
 var_plot <- function(start_date, end_date, variable, by_var) {
 
   dat <- arrange_data(start_date, end_date, variable) %>%
-    dplyr::group_by(station, dataset) %>%
-    dplyr::mutate(avg_diff = mean(diff_value))
+    dplyr::group_by(station, dataset, Elevation, Landform, Aspect, Slope) %>%
+    dplyr::summarise(avg_diff = mean(diff_value)) %>%
+    dplyr::filter(dataset != "mesonet") %>%
+    ggplot(aes(x = station, y = avg_diff, color = dataset)) +
+      geom_point() +
+      viz_mesonet("variable", "plot_title", "direct") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      facet_wrap(~station) +
+      ylim(0,50)
+
+
 
 }
 
 extract_mes_vals <- function(variable) {
 
-  readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations.csv",
+  readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations_current.csv",
                   col_types = readr::cols()) %>%
     dplyr::rename(ppt = precipitation) %>%
-    dplyr::select(days, !!variable, station_name) %>%
+    dplyr::select(day, !!variable, station) %>%
     dplyr::rename(mesonet_value = !!variable,
-                  date = days,
-                  station = station_name) %>%
+                  date = day) %>%
     dplyr::mutate(date = lubridate::as_date(date))
 }
 
-extract_grid_vals <- function(fname) {
+extract_grid_vals <- function(fname, variable) {
 
   rast <- velox::velox(fname)
 
@@ -88,16 +118,36 @@ extract_grid_vals <- function(fname) {
     tibble::as_tibble() %>%
     magrittr::set_colnames(dates_from_fname(fname)) %>%
     tibble::add_column(station = mesonet_sites$station,
-                       elevation = mesonet_sites$Elevation,
-                       landform = mesonet_sites$Landform,
-                       aspect = mesonet_sites$Aspect,
-                       slope = mesonet_sites$Slope) %>%
-    tidyr::gather(key = date, value = grid_value,
-                  -station, -elevation, -landform) %>%
+                       Elevation = mesonet_sites$Elevation,
+                       Landform = mesonet_sites$Landform,
+                       Aspect = mesonet_sites$Aspect,
+                       Slope = mesonet_sites$Slope) %>%
+    tidyr::gather(key = date, value = value,
+                  -station, -Elevation, -Landform, -Slope, -Aspect) %>%
     dplyr::mutate(date = lubridate::as_date(date)) %>%
     tibble::add_column(dataset = dataset_from_fname(fname)) %>%
     dplyr::left_join(extract_mes_vals(variable),
                      by = c("station", "date"))
+
+
+}
+
+bind_mes_rows <- function(variable) {
+
+  mesonet_sites <- "./analysis/data/raw_data/shapefiles/mesonet_attributed.shp" %>%
+    sf::read_sf()
+
+  readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations_current.csv",
+                  col_types = readr::cols()) %>%
+    dplyr::rename(ppt = precipitation) %>%
+    dplyr::select(day, !!variable, station) %>%
+    dplyr::rename(mesonet_value = !!variable,
+                  date = day) %>%
+    dplyr::mutate(date = lubridate::as_date(date)) %>%
+    dplyr::left_join(mesonet_sites, by = "station") %>%
+    dplyr::select(-lat, -lon, -geometry) %>%
+    dplyr::mutate(value = mesonet_value,
+                  dataset = "mesonet")
 
 }
 
@@ -128,26 +178,27 @@ dataset_from_fname <- function(fname) {
 
 }
 
-
-
-
-
 viz_mesonet <- function(variable, plot_title, type) {
 
-  myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD")
-  names(myColors) <- c("prism", "daymet", "gridmet", "chirps")
+  myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD", "red")
+  names(myColors) <- c("prism", "daymet", "gridmet", "chirps", "mesonet")
 
   if (variable == "tmax" || variable == "tmin") {
-    suffix <-  "Temperature (C)"
+    suffix <-  "Temperature"
+    vunit <- "(C)"
   } else {
-    suffix <-  "Precipitation (mm)"
+    suffix <-  "Precipitation"
+    vunit <- "(mm)"
   }
 
   if (type == "direct") {
-    ylab <- paste("Mesonet", suffix)
-    xlab <- paste("Gridded", suffix)
+    ylab <- paste("Mesonet", suffix, vunit)
+    xlab <- paste("Gridded", suffix, vunit)
   } else if (type == "time") {
-    ylab <- "Temperature Difference (C)"
+    ylab <- paste(suffix, "Difference", vunit)
+    xlab <- "Date"
+  } else if (type == "raw_time") {
+    ylab <- paste(suffix, vunit)
     xlab <- "Date"
   }
 
@@ -171,3 +222,14 @@ viz_mesonet <- function(variable, plot_title, type) {
 
 }
 
+write_out_csvs <- function(start_date, end_date, variable) {
+
+  fname <- paste0("./analysis/data/derived_data/Mesonet/extracts/",
+                  variable, "_",
+                  gsub(pattern = "-", "", start_date), "_",
+                  gsub(pattern = "_", "", end_date), ".tif")
+
+  arrange_data(start_date, end_date, variable) %>%
+    readr::write_csv(path = fname)
+
+}
