@@ -7,9 +7,14 @@ download_prism <- function(start_date = "2013-08-01", end_date = "2013-08-04", v
 
   dates <- seq(lubridate::as_date(start_date),
                lubridate::as_date(end_date), 1) %>%
-    gsub("-", "", .)
+    gsub("-", "", .) %>%
+    head(-1)
 
-  get_prism_dailys(type = variable, minDate = start_date, maxDate = end_date, keepZip=F)
+  new_end <- lubridate::as_date(end_date) %>%
+    magrittr::subtract(1) %>%
+    as.character()
+
+  get_prism_dailys(type = variable, minDate = start_date, maxDate = new_end, keepZip=F)
 
   dat_stack <-
     ls_prism_data() %>%
@@ -34,6 +39,9 @@ download_prism <- function(start_date = "2013-08-01", end_date = "2013-08-04", v
                         format = "GTiff")
 }
 
+download_prism(start_date = "2017-01-01", end_date = "2018-01-01", variable = "tmin")
+download_prism(start_date = "2017-01-01", end_date = "2018-01-01", variable = "tmax")
+download_prism(start_date = "2017-01-01", end_date = "2018-01-01", variable = "ppt")
 
 
 
