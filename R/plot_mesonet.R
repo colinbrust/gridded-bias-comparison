@@ -6,13 +6,8 @@
 #
 # }
 
-raw_time_plot <- function(dat_source, start_date = "2017-01-01", end_date = "2018-01-01",
+raw_time_plot <- function(dat_source, analysis_dates,
                           variable, station_filter) {
-
-  analysis_dates <- seq(lubridate::as_date(start_date),
-                        lubridate::as_date(end_date),
-                        by = "days") %>%
-    head(-1)
 
   dat_source %>%
     dplyr::filter(variable == !!variable) %>%
@@ -20,7 +15,7 @@ raw_time_plot <- function(dat_source, start_date = "2017-01-01", end_date = "201
     dplyr::filter(station == station_filter) %>%
     ggplot(aes(x = date, y = value, color = dataset)) +
       geom_line(size = 0.5) +
-      viz_mesonet(variable, "raw_time") +
+      viz_mesonet(variable, "raw_time", NA) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       facet_wrap(~station)
 
@@ -28,74 +23,58 @@ raw_time_plot <- function(dat_source, start_date = "2017-01-01", end_date = "201
 
 
 
-# direct_plot <- function(start_date, end_date, variable) {
-#
-#   plot_title <- paste("Comparison of Gridded and Mesonet", variable, "Values\n",
-#                       "from", start_date, "to", end_date)
-#
-#   analysis_dates <- seq(lubridate::as_date(start_date),
-#                         lubridate::as_date(end_date),
-#                         by = "days") %>%
-#     head(-1)
-#
-#   select_data(variable) %>%
-#     dplyr::filter(date %in% analysis_dates) %>%
-#     dplyr::filter(dataset != "mesonet") %>%
-#     ggplot2::ggplot(aes(x = value, y = mesonet_value, color = dataset)) +
-#     geom_point() +
-#     geom_abline(intercept = 0, colour = "red", size = 1) +
-#     viz_mesonet(variable, plot_title, "direct") +
-#     coord_fixed() +
-#     facet_wrap(~station)
-#
-# }
-#
-# time_plot <- function(start_date, end_date, variable, ...) {
-#
-#   plot_title <- paste("Mesonet Difference from Gridded", variable,  "Values\nfrom",
-#                       start_date, "to", end_date)
-#
-#   analysis_dates <- seq(lubridate::as_date(start_date),
-#                         lubridate::as_date(end_date),
-#                         by = "days") %>%
-#     head(-1)
-#
-#   select_data(variable) %>%
-#     dplyr::filter(date %in% analysis_dates) %>%
-#     dplyr::filter(dataset != "mesonet") %>%
-#     dplyr::filter_(...) %>%
-#     ggplot(aes(x = date, y = diff_value, color = dataset)) +
-#     geom_line(size = 0.5) +
-#     viz_mesonet(variable, plot_title, "time") +
-#     geom_hline(yintercept=0, colour="red", size=1) +
-#     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-#     facet_wrap(~station)
-# }
-#
-# var_plot <- function(start_date, end_date, variable, by_var) {
-#
-#   analysis_dates <- seq(lubridate::as_date(start_date),
-#                         lubridate::as_date(end_date),
-#                         by = "days") %>%
-#     head(-1)
-#
-#   select_data(variable) %>%
-#     dplyr::filter(date %in% analysis_dates) %>%
-#     dplyr::group_by(station, dataset, Elevation, Landform, Aspect, Slope) %>%
-#     dplyr::summarise(avg_diff = mean(diff_value)) %>%
-#     dplyr::filter(dataset != "mesonet") %>%
-#     ggplot(aes(x = station, y = avg_diff, color = dataset)) +
-#     geom_point() +
-#     viz_mesonet("variable", "plot_title", "direct") +
-#     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-#     facet_wrap(~station) +
-#     ylim(0,50)
-#
-#
-#
-# }
+direct_plot <- function(dat_source, analysis_dates,
+                        variable, station_filter) {
 
-viz_mesonet <- function(variable, type) {
+  dat_source %>%
+    dplyr::filter(variable == !!variable) %>%
+    dplyr::filter(date %in% analysis_dates) %>%
+    dplyr::filter(station == station_filter) %>%
+    dplyr::filter(dataset != "mesonet") %>%
+    ggplot2::ggplot(aes(x = value, y = mesonet_value, color = dataset)) +
+      geom_point() +
+      geom_abline(intercept = 0, colour = "red", size = 1) +
+      viz_mesonet(variable, "direct", NA) +
+      coord_fixed() +
+      facet_wrap(~station)
+
+}
+
+time_plot <- function(dat_source, analysis_dates,
+                      variable, station_filter) {
+
+  dat_source %>%
+    dplyr::filter(variable == !!variable) %>%
+    dplyr::filter(date %in% analysis_dates) %>%
+    dplyr::filter(station == station_filter) %>%
+    dplyr::filter(dataset != "mesonet") %>%
+    ggplot(aes(x = date, y = diff_value, color = dataset)) +
+      geom_line(size = 0.5) +
+      viz_mesonet(variable, "time", NA) +
+      geom_hline(yintercept=0, colour="red", size=1) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      facet_wrap(~station)
+}
+
+var_plot <- function(dat_source, analysis_dates,
+                     variable, by_var) {
+
+  dat_source %>%
+    dplyr::filter(variable == !!variable) %>%
+    dplyr::filter(date %in% analysis_dates) %>%
+    dplyr::group_by(station, dataset, Elevation, Landform, Aspect, Slope) %>%
+    dplyr::summarise(avg_diff = mean(diff_value)) %>%
+    dplyr::filter(dataset != "mesonet") %>%
+    dplyr::ungroup() %>%
+    dplyr::select(station, dataset, avg_diff, !!by_var) %>%
+    dplyr::rename(by_var = !!by_var) %>%
+    ggplot(aes(x = by_var, y = avg_diff, label = station, color = dataset)) +
+      geom_point() +
+      viz_mesonet(variable, "var", by_var) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+viz_mesonet <- function(variable, type, by_var) {
 
   myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD", "red")
   names(myColors) <- c("prism", "daymet", "gridmet", "chirps", "mesonet")
@@ -117,6 +96,9 @@ viz_mesonet <- function(variable, type) {
   } else if (type == "raw_time") {
     ylab <- paste(suffix, vunit)
     xlab <- "Date"
+  } else if (type == "var") {
+    ylab <- paste("Average", suffix, "Difference")
+    xlab <- paste(by_var)
   }
 
   return(list(
