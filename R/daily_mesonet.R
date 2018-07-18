@@ -11,7 +11,7 @@ daily_mesonet <- function(station) {
   }
 
   replace_ppt <- function(x) {
-    x[x>50] <- NA
+    x[x>30] <- NA
     return(x)
   }
 
@@ -27,9 +27,8 @@ daily_mesonet <- function(station) {
     dplyr::filter(recordnum != "n") %>%
     dplyr::mutate_at(.vars = dplyr::vars(precipitation:temperature),
                      .funs = ~replace_na(.)) %>%
-    dplyr::mutate_at(.vars = dplyr::vars(precipitation), # This replaces ppt > 50mm in a 30 min time period.
+    dplyr::mutate_at(.vars = dplyr::vars(precipitation), # This replaces ppt > 30mm in a 30 min time period.
                      .funs = ~replace_ppt(.)) %>%        # This is an arbitrary number but is my filter for now.
-    dplyr::filter(timestamp %in% valid_times) %>%
     dplyr::mutate(timestamp = lubridate::as_datetime(timestamp)) %>%
     dplyr::distinct() %>%
     dplyr::group_by(day = lubridate::floor_date(timestamp, "day")) %>%
