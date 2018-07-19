@@ -83,9 +83,7 @@ ui <- shinyUI(fluidPage(
                                 "South Central" = "SOUTH CENTRAL",
                                 "Southeastern" = "SOUTHEASTERN",
                                 "Southwestern" = "SOUTHWESTERN",
-                                "Western" = "WESTERN")),
-
-                 checkboxInput("dev2", "Show Deviation from Ensemble Mean", FALSE)
+                                "Western" = "WESTERN"))
 
                ), # end of sidebarPanel
 
@@ -212,19 +210,7 @@ server <- function(input, output, session) {
 
   })
 
-  observeEvent(input$type2, {
-
-    if(input$type2 == "maps") {
-      shinyjs::disable("dev2")
-    } else {
-      shinyjs::enable("dev2")
-    }
-  })
-
   output$elevPlot <- renderImage({
-
-    if(input$dev2) dev_name = "devT"
-    else dev_name = "devF"
 
     if(input$type2 == "maps") {
 
@@ -239,7 +225,7 @@ server <- function(input, output, session) {
 
     } else  {
 
-      new_path <- paste(base, "elev", dev_name, input$stat2, sep = "/") %>%
+      new_path <- paste(base, "elev", input$type2, input$stat2, sep = "/") %>%
         list.files(full.names = T, pattern = ".png") %>%
         grep(input$variable2, ., value = T) %>%
         get_cd_reg(input$cd)

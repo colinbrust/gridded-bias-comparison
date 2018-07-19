@@ -1,34 +1,41 @@
-options(prism.path = "./analysis/data/raw_data/daily_data/prism")
 
-download_prism <- function(start_date = "2013-08-01", end_date = "2013-08-04", variable = "tmin") {
+
+download_prism <- function(dates = c("2017-01-01", "2017-01-03"), variable = "tmin",
+                           outdir = "./analysis/data/raw_data/daily_data/prism",
+                           aoi =
+                             "./analysis/data/raw_data/shapefiles/aoi.shp" %>%
+                             sf::read_sf()) {
 
   library(prism)
   library(magrittr)
 
-  dates <- seq(lubridate::as_date(start_date),
-               lubridate::as_date(end_date), 1) %>%
-    gsub("-", "", .) %>%
-    head(-1)
+  options(prism.path = outdir)
 
-  new_end <- lubridate::as_date(end_date) %>%
-    magrittr::subtract(1) %>%
-    as.character()
-
-  get_prism_dailys(type = variable, minDate = start_date, maxDate = new_end, keepZip=F)
+  get_prism_dailys(type = variable, minDate = head(dates, 1),
+                   maxDate = tail(dates, 1), keepZip=F)
 
   dat_stack <-
     ls_prism_data() %>%
     prism_stack()
 
-  out_name <- paste0("./analysis/data/raw_data/daily_data/prism_",
-                     variable, "_",
-                     gsub(pattern = "-", replacement = "", x = start_date), "_",
-                     gsub(pattern = "-", replacement = "", x = end_date),
-                     ".tif")
+  if(length(dates) == 1) {
+
+    out_name <- paste0(outdir, "/prism_",
+                       variable, "_",
+                       gsub(pattern = "-", replacement = "", x = dates),
+                       ".tif")
+
+  } else {
+
+    out_name <- paste0(outdir, "/prism_",
+                       variable, "_",
+                       gsub(pattern = "-", replacement = "", x = dates[1]), "_",
+                       gsub(pattern = "-", replacement = "", x = dates[2]),
+                       ".tif")
+  }
 
   aoi <-
-    "./analysis/data/raw_data/shapefiles/aoi.shp" %>%
-    sf::read_sf() %>%
+    aoi %>%
     sf::st_transform(raster::projection(dat_stack)) %>%
     raster::extent() %>%
     lapply(round)
@@ -37,17 +44,11 @@ download_prism <- function(start_date = "2013-08-01", end_date = "2013-08-04", v
     raster::crop(raster::extent(aoi[[1]], aoi[[2]], aoi[[3]], aoi[[4]])) %>%
     raster::writeRaster(filename = out_name,
                         format = "GTiff")
+
+  list.dirs(outdir, full.names = T) %>%
+    grep("PRISM", ., value = T) %>%
+    unlink(recursive = T)
 }
-
-download_prism(start_date = "2017-01-01", end_date = "2018-01-01", variable = "tmin")
-download_prism(start_date = "2017-01-01", end_date = "2018-01-01", variable = "tmax")
-download_prism(start_date = "2017-01-01", end_date = "2018-01-01", variable = "ppt")
-
-
-
-
-
-
 
 
 
