@@ -20,7 +20,7 @@ daily_mesonet <- function(station) {
     return(x)
   }
 
-  list.files("./analysis/data/raw_data/mesonet_data", full.names = T,
+  list.files("Y:/Data/Mesonet/ZentraTest/API-Output/ClimateOffice/Level1", full.names = T,
              pattern = station) %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::select(`Record Number [n]`, `UTC Time [ms]`, `Local Date`, `Precipitation [mm]`,
@@ -59,7 +59,7 @@ extract_grid_vals <- function(fname, variable) {
 
   rast <- velox::velox(fname)
 
-  mesonet_sites <- "./analysis/data/raw_data/shapefiles/mesonet_attributed.shp" %>%
+  mesonet_sites <- "./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp" %>%
     sf::read_sf() %>%
     sf::st_transform(fname %>% raster::raster() %>%
                        raster::projection())
@@ -86,7 +86,7 @@ extract_grid_vals <- function(fname, variable) {
 # are in a comparable format.
 bind_mes_rows <- function(variable) {
 
-  mesonet_sites <- "./analysis/data/raw_data/shapefiles/mesonet_attributed.shp" %>%
+  mesonet_sites <- "./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp" %>%
     sf::read_sf()
 
   readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations_current.csv",
@@ -167,18 +167,6 @@ arrange_data <- function(start_date, end_date, variable) {
                   dataset = factor(dataset))
 }
 
-write_out_csvs <- function(start_date, end_date, variable) {
-
-  fname <- paste0("./analysis/data/derived_data/Mesonet/extracts/",
-                  variable, "_",
-                  gsub(pattern = "-", "", start_date), "_",
-                  gsub(pattern = "-", "", end_date), ".csv")
-
-  arrange_data(start_date, end_date, variable) %>%
-    readr::write_csv(path = fname)
-
-}
-
 # Writes out the most recent mesonet data you downloaded to a tidy format, then
 # extracts gridded dataset values for the same locations as mesonet sites and
 # also writes out the resulting data frame.
@@ -186,18 +174,30 @@ aggregate_mesonet_functions <- function() {
 
   library(magrittr)
 
-  c("conradmt", "corvalli", "ebarllob", "havrenmt",
-    "huntleys", "kalispel", "moccasin", "sidneymt") %>%
+  suppressWarnings(c("arskeogh", "bentlake", "blm1arge", "blm2virg", "blm3mcca",
+    "blm5kidd", "churchil", "conradmt", "corvalli", "crowagen",
+    "ebarllob", "ftbentcb", "havrenmt", "huntleys", "kalispel",
+    "lubrecht", "moccasin", "moltwest", "raplejen", "reedpoin",
+    "sidneymt", "suatnasa", "turekran") %>%
     lapply(daily_mesonet) %>%
     dplyr::bind_rows() %>%
-    readr::write_csv(path = "./analysis/data/derived_data/Mesonet/all_stations_2017.csv")
+    readr::write_csv(path = "./analysis/data/derived_data/Mesonet/all_stations_current.csv"))
 
-  list(arrange_data("2017-01-01", "2018-01-01", "ppt"),
-       arrange_data("2017-01-01", "2018-01-01", "tmax"),
-       arrange_data("2017-01-01", "2018-01-01", "tmin")) %>%
+print("test")
+
+  to_date <- as.character(Sys.Date() - 1)
+  out_name <- paste0("./analysis/data/derived_data/Mesonet/extracts/mes_grid_20170101_",
+                     gsub("-", "", to_date), ".csv")
+
+  list(arrange_data("2017-01-01", to_date, "ppt"),
+       arrange_data("2017-01-01", to_date, "tmax"),
+       arrange_data("2017-01-01", to_date, "tmin")) %>%
     dplyr::bind_rows() %>%
-    readr::write_csv(path = "./analysis/data/derived_data/Mesonet/extracts/all_20170101_20180101.csv")
+    readr::write_csv(path = out_name)
 
 }
 
+
 aggregate_mesonet_functions()
+
+

@@ -1,0 +1,114 @@
+last_image_date <- function(dataset, data_dir = "./analysis/data/raw_data/daily_data") {
+
+  if(dataset == "gridmet") {
+
+    return(
+      paste0(data_dir, "/", dataset) %>%
+        list.files(full.names = T) %>%
+        grep(pattern = "Thumbs.db", x = ., invert = TRUE, value = TRUE) %>%
+        basename() %>%
+        tools::file_path_sans_ext() %>%
+        stringr::str_split(pattern = "_") %>%
+        lapply(function(x) magrittr::extract(x, 3)) %>%
+        unlist() %>%
+        max())
+
+  } else if (dataset == "prism") {
+
+    return(
+      paste0(data_dir, "/", dataset) %>%
+        list.files(full.names = T, pattern = ".bil") %>%
+        basename() %>%
+        stringr::str_split(pattern = "_") %>%
+        lapply(function(x) magrittr::extract(x, 5)) %>%
+        unlist() %>%
+        max())
+  }
+}
+
+stack_prism <- function(variable, data_dir = "./analysis/data/raw_data/daily_data/prism") {
+
+  library(prism)
+
+  options(prism.path = data_dir)
+
+  out_name <- paste0(data_dir, "/",
+                    "prism", "_",
+                    variable, "_",
+                    "20170101", "_",
+                    last_image_date("prism"), ".tif")
+
+  prism_data <- ls_prism_data(absPath = T) %>%
+                  dplyr::filter(grepl(!!variable, abs_path))
+
+  prism_data[[2]] %>%
+    lapply(raster::raster) %>%
+    raster::stack(quick = T) %>%
+    raster::writeRaster(filename = out_name, format = "GTiff")
+}
+
+stack_gridmet <- function(variable, data_dir = "./analysis/data/raw_data/daily_data") {
+
+  files_use <- list.files(paste0(data_dir, "/gridmet"),
+                 full.names = T,
+                 pattern = variable)
+
+  file_dates <- files_use %>%
+    lapply(function(flist) {flist %>%
+                             basename %>%
+                             tools::file_path_sans_ext() %>%
+                             stringr::str_split(pattern = "_") %>%
+                             unlist() %>%
+                             tail(1)}) %>%
+    unlist()
+
+  out_name <- paste0(data_dir, "/",
+                     "gridmet", "_",
+                     variable, "_",
+                     head(file_dates, 1), "_",
+                     tail(file_dates, 1), ".tif")
+
+  files_use %>%
+    lapply(raster::raster) %>%
+    raster::stack(quick = FALSE) %>%
+    raster::writeRaster(filename = out_name, format = "GTiff")
+
+}
+
+download_latest <- function() {
+
+  source("./R/prism_gm_download.R")
+
+  gm_date <-
+    last_image_date("gridmet") %>%
+    lubridate::as_date() %>%
+    magrittr::add(1)
+
+  if (gm_date == Sys.Date()) {
+
+    print("Gridmet is up to date")
+
+  } else {
+
+    seq(gm_date, Sys.Date() - 1, by = "days") %>%
+      lapply(get_gridmet_daily)
+
+  }
+
+  pris_date <-
+    last_image_date("prism") %>%
+    lubridate::as_date() %>%
+    magrittr::add(1)
+
+  if (pris_date == Sys.Date()) {
+
+    print("Prism is up to date")
+
+  } else {
+
+    seq(pris_date, Sys.Date() - 1, by = "days") %>%
+      lapply(get_prism_daily)
+
+  }
+
+}
