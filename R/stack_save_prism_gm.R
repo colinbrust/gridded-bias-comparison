@@ -26,11 +26,24 @@ last_image_date <- function(dataset, data_dir = "./analysis/data/raw_data/daily_
   }
 }
 
-stack_prism <- function(variable, data_dir = "./analysis/data/raw_data/daily_data/prism") {
+stack_prism <- function(variable, data_dir = "./analysis/data/raw_data/daily_data") {
+
+  date_from_fname <- function(fname) {
+
+    fname %>%
+      basename() %>%
+      tools::file_path_sans_ext() %>%
+      stringr::str_split("_") %>%
+      unlist %>%
+      magrittr::extract(5) %>%
+      lubridate::as_date() %>%
+      gsub("-", "", .)
+
+  }
 
   library(prism)
 
-  options(prism.path = data_dir)
+  options(prism.path = paste0(data_dir, "/prism"))
 
   out_name <- paste0(data_dir, "/",
                     "prism", "_",
@@ -38,13 +51,20 @@ stack_prism <- function(variable, data_dir = "./analysis/data/raw_data/daily_dat
                     "20170101", "_",
                     last_image_date("prism"), ".tif")
 
-  prism_data <- ls_prism_data(absPath = T) %>%
-                  dplyr::filter(grepl(!!variable, abs_path))
+  date_range <- ls_prism_data(absPath = T) %>%
+    magrittr::extract2(2) %>%
+    grep(pattern = variable, x = ., value = T) %>%
+    lapply(date_from_fname) %>%
+    unlist() %>%
+    as.Date(format = "%Y%m%d")
 
-  prism_data[[2]] %>%
+  dat <- ls_prism_data(absPath = T) %>%
+    dplyr::filter(grepl(!!variable, abs_path)) %>%
+    magrittr::extract2(2)
+
+  dat[order(date_range)] %>%
     lapply(raster::raster) %>%
-    raster::stack(quick = T) %>%
-    raster::writeRaster(filename = out_name, format = "GTiff")
+    raster::stack(quick = T)
 }
 
 stack_gridmet <- function(variable, data_dir = "./analysis/data/raw_data/daily_data") {
@@ -70,8 +90,7 @@ stack_gridmet <- function(variable, data_dir = "./analysis/data/raw_data/daily_d
 
   files_use %>%
     lapply(raster::raster) %>%
-    raster::stack(quick = FALSE) %>%
-    raster::writeRaster(filename = out_name, format = "GTiff")
+    raster::stack(quick = FALSE)
 
 }
 

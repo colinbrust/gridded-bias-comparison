@@ -55,18 +55,22 @@ extract_mes_vals <- function(variable) {
 
 # This function extracts the specified climate variable values for a gridded dataset for
 # every day that mesonet station have data.
-extract_grid_vals <- function(fname, variable) {
+extract_grid_vals <- function(rast_stack, variable, dataset) {
 
-  rast <- velox::velox(fname)
+  rast <- velox::velox(rast_stack)
 
   mesonet_sites <- "./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp" %>%
     sf::read_sf() %>%
-    sf::st_transform(fname %>% raster::raster() %>%
+    sf::st_transform(rast_stack %>%
                        raster::projection())
+
+  date_range <- seq(lubridate::as_date("2017-01-01"),
+                    lubridate::as_date(last_image_date(dataset)), by = "days") %>%
+    gsub("-", "", .)
 
   rast$extract_points(sp = mesonet_sites) %>%
     tibble::as_tibble() %>%
-    magrittr::set_colnames(dates_from_fname(fname)) %>%
+    magrittr::set_colnames(date_range) %>%
     tibble::add_column(station = mesonet_sites$station,
                        Elevation = mesonet_sites$Elevation,
                        Landform = mesonet_sites$Landform,
@@ -75,7 +79,7 @@ extract_grid_vals <- function(fname, variable) {
     tidyr::gather(key = date, value = value,
                   -station, -Elevation, -Landform, -Slope, -Aspect) %>%
     dplyr::mutate(date = lubridate::as_date(date)) %>%
-    tibble::add_column(dataset = dataset_from_fname(fname)) %>%
+    tibble::add_column(dataset = !!dataset) %>%
     dplyr::left_join(extract_mes_vals(variable),
                      by = c("station", "date"))
 
@@ -134,34 +138,25 @@ dataset_from_fname <- function(fname) {
 
 # this function combines all functions above to produce a data frame that
 # combines mesonet and gridded data values.
-arrange_data <- function(start_date, end_date, variable) {
+arrange_data <- function(variable) {
 
-  library(magrittr)
-  library(lubridate)
-  library(dplyr)
-  library(tidyr)
-  library(velox)
-  library(ggplot2)
+  dat <-  mapply(extract_grid_vals,
+         rast_stack = list(stack_gridmet(variable), stack_prism(variable)),
+         variable = list(variable, variable),
+         dataset = list("gridmet", "prism"))
 
-  # start_date = "2017-09-01"
-  # end_date = "2017-10-01"
-  # variable = "tmin"
+  print(paste(variable, "is extracted"))
 
-  analysis_dates <- seq(lubridate::as_date(start_date),
-                        lubridate::as_date(end_date),
-                        by = "days") %>%
-    head(-1)
-
-  list.files("./analysis/data/raw_data/daily_data",
-             full.names = T,
-             pattern = ".tif") %>%
-    grep(variable, ., value = TRUE) %>%
-    lapply(extract_grid_vals, variable = variable) %>%
-    dplyr::bind_rows() %>%
+  dplyr::bind_rows(dplyr::bind_cols(dat[,1]),
+                   dplyr::bind_cols(dat[,2])) %>%
     dplyr::bind_rows(bind_mes_rows(variable)) %>%
-    dplyr::filter(date %in% analysis_dates) %>%
     dplyr::filter(!is.na(mesonet_value)) %>%
     tibble::add_column(variable = !!variable) %>%
+    dplyr::mutate(value = dplyr::if_else(dataset == "gridmet" &
+                                        (variable == "tmin" |
+                                         variable == "tmax"),
+                  true = value - 273.15,
+                  false = value)) %>%
     dplyr::mutate(diff_value = value-mesonet_value,
                   station = factor(station),
                   dataset = factor(dataset))
@@ -173,6 +168,18 @@ arrange_data <- function(start_date, end_date, variable) {
 aggregate_mesonet_functions <- function() {
 
   library(magrittr)
+  library(lubridate)
+  library(dplyr)
+  library(tidyr)
+  library(velox)
+  library(ggplot2)
+  source("./R/stack_save_prism_gm.R")
+
+  list.files("./analysis/data/derived_data/Mesonet/extracts", full.names = T,
+             pattern = "mes_grid") %>%
+    unlink()
+
+  download_latest()
 
   suppressWarnings(c("arskeogh", "bentlake", "blm1arge", "blm2virg", "blm3mcca",
     "blm5kidd", "churchil", "conradmt", "corvalli", "crowagen",
@@ -183,20 +190,16 @@ aggregate_mesonet_functions <- function() {
     dplyr::bind_rows() %>%
     readr::write_csv(path = "./analysis/data/derived_data/Mesonet/all_stations_current.csv"))
 
-print("test")
-
-  to_date <- as.character(Sys.Date() - 1)
   out_name <- paste0("./analysis/data/derived_data/Mesonet/extracts/mes_grid_20170101_",
-                     gsub("-", "", to_date), ".csv")
+                     gsub("-", "", as.character(Sys.Date() - 1)), ".csv")
 
-  list(arrange_data("2017-01-01", to_date, "ppt"),
-       arrange_data("2017-01-01", to_date, "tmax"),
-       arrange_data("2017-01-01", to_date, "tmin")) %>%
+  list(arrange_data("ppt"),
+       arrange_data("tmax"),
+       arrange_data("tmin")) %>%
     dplyr::bind_rows() %>%
     readr::write_csv(path = out_name)
 
 }
-
 
 aggregate_mesonet_functions()
 

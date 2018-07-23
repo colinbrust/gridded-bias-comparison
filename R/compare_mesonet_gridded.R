@@ -31,9 +31,11 @@ daily_mesonet <- function(station) {
                      .funs = ~replace_na(.)) %>%
     dplyr::mutate_at(.vars = dplyr::vars(precipitation), # This replaces ppt > 30mm in a 30 min time period.
                      .funs = ~replace_ppt(.)) %>%        # This is an arbitrary number but is my filter for now.
-    dplyr::mutate(timestamp = lubridate::as_datetime(timestamp)) %>%
+    # dplyr::mutate(timestamp = lubridate::as_datetime(timestamp)) %>%
+    dplyr::mutate(localtime = lubridate::as_datetime(localtime)) %>%
     dplyr::distinct() %>%
-    dplyr::group_by(day = lubridate::floor_date(timestamp, "day")) %>%
+   # dplyr::group_by(day = lubridate::floor_date(timestamp, "day")) %>%
+    dplyr::group_by(day = lubridate::floor_date(localtime, "day")) %>%
     dplyr::summarise(ppt = sum(precipitation),
                      tmin = min(temperature),
                      tmean = mean(temperature),
@@ -45,7 +47,7 @@ daily_mesonet <- function(station) {
 # This function returns a tibble of all mesonet station values for a given variable.
 extract_mes_vals <- function(variable) {
 
-  readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations_current.csv",
+  readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations_2017.csv",
                   col_types = readr::cols()) %>%
     dplyr::select(day, !!variable, station) %>%
     dplyr::rename(mesonet_value = !!variable,
@@ -152,7 +154,7 @@ arrange_data <- function(start_date, end_date, variable) {
                         by = "days") %>%
     head(-1)
 
-  list.files("./analysis/data/raw_data/daily_data",
+  list.files("./analysis/data/raw_data/daily_comparison",
              full.names = T,
              pattern = ".tif") %>%
     grep(variable, ., value = TRUE) %>%
@@ -187,7 +189,7 @@ aggregate_mesonet_functions <- function() {
   library(magrittr)
 
   c("conradmt", "corvalli", "ebarllob", "havrenmt",
-    "huntleys", "kalispel", "moccasin", "sidneymt") %>%
+   "huntleys", "kalispel", "moccasin", "sidneymt") %>%
     lapply(daily_mesonet) %>%
     dplyr::bind_rows() %>%
     readr::write_csv(path = "./analysis/data/derived_data/Mesonet/all_stations_2017.csv")

@@ -6,12 +6,12 @@
 #
 # }
 
-raw_time_plot <- function(dat_source, analysis_dates,
-                          variable, station_filter) {
+raw_time_plot <- function(dat_source,
+                          variable,
+                          station_filter) {
 
   dat_source %>%
     dplyr::filter(variable == !!variable) %>%
-    dplyr::filter(date %in% analysis_dates) %>%
     dplyr::filter(station == station_filter) %>%
     ggplot(aes(x = date, y = value, color = dataset)) +
       geom_line(size = 0.5) +
@@ -23,12 +23,12 @@ raw_time_plot <- function(dat_source, analysis_dates,
 
 
 
-direct_plot <- function(dat_source, analysis_dates,
-                        variable, station_filter) {
+direct_plot <- function(dat_source,
+                        variable,
+                        station_filter) {
 
   dat_source %>%
     dplyr::filter(variable == !!variable) %>%
-    dplyr::filter(date %in% analysis_dates) %>%
     dplyr::filter(station == station_filter) %>%
     dplyr::filter(dataset != "mesonet") %>%
     ggplot2::ggplot(aes(x = value, y = mesonet_value, color = dataset)) +
@@ -40,12 +40,12 @@ direct_plot <- function(dat_source, analysis_dates,
 
 }
 
-time_plot <- function(dat_source, analysis_dates,
-                      variable, station_filter) {
+time_plot <- function(dat_source,
+                      variable,
+                      station_filter) {
 
   dat_source %>%
     dplyr::filter(variable == !!variable) %>%
-    dplyr::filter(date %in% analysis_dates) %>%
     dplyr::filter(station == station_filter) %>%
     dplyr::filter(dataset != "mesonet") %>%
     ggplot(aes(x = date, y = diff_value, color = dataset)) +
@@ -56,12 +56,12 @@ time_plot <- function(dat_source, analysis_dates,
       facet_wrap(~station)
 }
 
-var_plot <- function(dat_source, analysis_dates,
-                     variable, by_var) {
+var_plot <- function(dat_source,
+                     variable,
+                     by_var) {
 
   dat_source %>%
     dplyr::filter(variable == !!variable) %>%
-    dplyr::filter(date %in% analysis_dates) %>%
     dplyr::group_by(station, dataset, Elevation, Landform, Aspect, Slope) %>%
     dplyr::summarise(avg_diff = mean(diff_value)) %>%
     dplyr::filter(dataset != "mesonet") %>%

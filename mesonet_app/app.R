@@ -48,7 +48,9 @@ ui <- fluidPage(
           radioButtons("type", "Plot Type:",
                              c("Date vs Value" = "raw_time_plot",
                                "Date vs Deviation from Mesonet" = "time_plot",
-                               "Mesonet vs Gridded Data" = "direct_plot"))
+                               "Mesonet vs Gridded Data" = "direct_plot")),
+
+          checkboxInput("current", "Show Live Data", FALSE)
         ), # end sidebarPanel
 
         mainPanel(
@@ -75,7 +77,9 @@ ui <- fluidPage(
                         c("Elevation" = "Elevation",
                           "Slope" = "Slope",
                           "Aspect" = "Aspect",
-                          "Landform" = "Landform"))
+                          "Landform" = "Landform")),
+
+           checkboxInput("current2", "Show Live Data", FALSE)
          ), # end sidebarPanel
 
          mainPanel(
@@ -90,18 +94,64 @@ ui <- fluidPage(
 )
 
 #### read data ####
-dat <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/all_20170101_20180101.csv" %>%
+dat1 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/all_20170101_20180101.csv" %>%
   readr::read_csv(col_types = readr::cols())
 
-analysis_dates <- seq(lubridate::as_date("2017-01-01"),
-                      lubridate::as_date("2018-01-01"),
-                      by = "days") %>%
-  head(-1)
+dat2 <- list.files("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts",
+                   full.names = T,
+                   pattern = "mes_grid") %>% readr::read_csv()
 
 #### server function ####
-server <- function(input, output) {
+server <- function(input, output, session) {
+
+  observe({
+
+    if(input$current) {
+
+      updateSelectInput(session, "station",
+                        choices = list("Ft. Keogh" = "arskeogh",
+                                   "Benton Lake" = "bentlake",
+                                   "Argenta" = "blm1arge",
+                                   "Virginia City" = "blm2virg",
+                                   "BLM MCCA" = "blm3mcca",
+                                   "BLM Kidd" = "blm5kidd",
+                                   "Churchill" = "churchil",
+                                   "Conrad" = "conradmt",
+                                   "Corvallis" = "corvalli",
+                                   "Crow Agency" = "crowagen",
+                                   "E Bar L" = "ebarllob",
+                                   "Ft. Benton" = "ftbentcb",
+                                   "Havre" = "havrenmt",
+                                   "Huntley's" = "huntleys",
+                                   "Kalispell" = "kalispel",
+                                   "Lubrecht" = "lubrecht",
+                                   "Moccasin" = "moccasin",
+                                   "Molt West" = "moltwest",
+                                   "Rapple J" = "rapplejen",
+                                   "Reed Point" = "reedpoin",
+                                   "Sidney" = "sidneymt",
+                                   "Suat" = "suatnasa",
+                                   "Turek Ranch" = "turekran"))
+    } else{
+
+      updateSelectInput(session, "station",
+                        choices = list("Conrad" = "conradmt",
+                                        "Corvallis" = "corvalli",
+                                        "E Bar L" = "ebarllob",
+                                        "Havre" = "havrenmt",
+                                        "Huntley's" = "huntleys",
+                                        "Kalispell" = "kalispel",
+                                        "Moccasin" = "moccasin",
+                                        "Sidney" = "sidneymt"))
+    }
+
+  })
+
 
   output$mesPlot <- plotly::renderPlotly({
+
+    if(input$current) use_dat <- dat2
+    else use_dat <- dat1
 
 
     plot_type <- switch(input$type,
@@ -109,14 +159,19 @@ server <- function(input, output) {
                         time_plot = time_plot,
                         direct_plot = direct_plot)
 
-    plot_type(dat, analysis_dates,
-              input$variable, input$station)
+    plot_type(use_dat,
+              input$variable,
+              input$station)
    })
 
   output$varPlot <- plotly::renderPlotly({
 
-    var_plot(dat, analysis_dates,
-             input$variable2, input$var)
+    if(input$current) use_dat <- dat2
+    else use_dat <- dat1
+
+    var_plot(use_dat,
+             input$variable2,
+             input$var)
 
   })
 
