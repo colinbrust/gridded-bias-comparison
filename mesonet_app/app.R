@@ -95,11 +95,16 @@ ui <- fluidPage(
 
 #### read data ####
 dat1 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/all_20170101_20180101.csv" %>%
-  readr::read_csv(col_types = readr::cols())
+  readr::read_csv(col_types = readr::cols()) %>%
+  dplyr::mutate(station = factor(station),
+                dataset = factor(dataset))
 
 dat2 <- list.files("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts",
                    full.names = T,
-                   pattern = "mes_grid") %>% readr::read_csv()
+                   pattern = "mes_grid") %>% readr::read_csv() %>%
+  dplyr::mutate(date = lubridate::as_datetime(date)) %>%
+  dplyr::mutate(date = dplyr::if_else(dataset == "prism", true = date - 86400,
+                                      false = date))
 
 #### server function ####
 server <- function(input, output, session) {

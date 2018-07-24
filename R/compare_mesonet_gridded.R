@@ -20,7 +20,8 @@ daily_mesonet <- function(station) {
     return(x)
   }
 
-  list.files("./analysis/data/raw_data/mesonet_data", full.names = T,
+  dat <-
+    list.files("./analysis/data/raw_data/mesonet_data", full.names = T,
              pattern = station) %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::select(`Record Number [n]`, `UTC Time [ms]`, `Local Date`, `Precipitation [mm]`,
@@ -31,17 +32,28 @@ daily_mesonet <- function(station) {
                      .funs = ~replace_na(.)) %>%
     dplyr::mutate_at(.vars = dplyr::vars(precipitation), # This replaces ppt > 30mm in a 30 min time period.
                      .funs = ~replace_ppt(.)) %>%        # This is an arbitrary number but is my filter for now.
-    # dplyr::mutate(timestamp = lubridate::as_datetime(timestamp)) %>%
-    dplyr::mutate(localtime = lubridate::as_datetime(localtime)) %>%
-    dplyr::distinct() %>%
-   # dplyr::group_by(day = lubridate::floor_date(timestamp, "day")) %>%
-    dplyr::group_by(day = lubridate::floor_date(localtime, "day")) %>%
+    dplyr::mutate(timestamp = lubridate::as_datetime(timestamp),
+                  noon_time = lubridate::as_datetime(timestamp - 43200)) %>%
+    dplyr::distinct()
+
+  dat2 <- dat %>%
+    dplyr::group_by(day = lubridate::floor_date(noon_time, "day")) %>%
     dplyr::summarise(ppt = sum(precipitation),
                      tmin = min(temperature),
                      tmean = mean(temperature),
                      tmax = max(temperature)) %>%
-    tibble::add_column(station)
+    tibble::add_column(dataset = "mesonet_noon")
 
+  dat %>%
+    dplyr::group_by(day = lubridate::floor_date(timestamp, "day")) %>%
+    dplyr::summarise(ppt = sum(precipitation),
+                     tmin = min(temperature),
+                     tmean = mean(temperature),
+                     tmax = max(temperature)) %>%
+    tibble::add_column(dataset = "mesonet") %>%
+    dplyr::bind_rows(dat2) %>%
+    tibble::add_column(station) %>%
+    dplyr::mutate(day = lubridate::as_date(day))
 }
 
 # This function returns a tibble of all mesonet station values for a given variable.
@@ -49,10 +61,10 @@ extract_mes_vals <- function(variable) {
 
   readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations_2017.csv",
                   col_types = readr::cols()) %>%
-    dplyr::select(day, !!variable, station) %>%
+    dplyr::select(day, !!variable, station, dataset) %>%
     dplyr::rename(mesonet_value = !!variable,
-                  date = day) %>%
-    dplyr::mutate(date = lubridate::as_date(date))
+                  date = day,
+                  mes_type = dataset)
 }
 
 # This function extracts the specified climate variable values for a gridded dataset for
@@ -91,16 +103,16 @@ bind_mes_rows <- function(variable) {
   mesonet_sites <- "./analysis/data/raw_data/shapefiles/mesonet_attributed.shp" %>%
     sf::read_sf()
 
-  readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations_current.csv",
+  readr::read_csv("./analysis/data/derived_data/Mesonet/all_stations_2017.csv",
                   col_types = readr::cols()) %>%
-    dplyr::select(day, !!variable, station) %>%
+    dplyr::select(day, !!variable, station, dataset) %>%
     dplyr::rename(mesonet_value = !!variable,
                   date = day) %>%
+    dplyr::mutate(mes_type = dataset) %>%
     dplyr::mutate(date = lubridate::as_date(date)) %>%
     dplyr::left_join(mesonet_sites, by = "station") %>%
     dplyr::select(-lat, -lon, -geometry) %>%
-    dplyr::mutate(value = mesonet_value,
-                  dataset = "mesonet")
+    dplyr::mutate(value = mesonet_value)
 
 }
 
@@ -145,10 +157,6 @@ arrange_data <- function(start_date, end_date, variable) {
   library(velox)
   library(ggplot2)
 
-  # start_date = "2017-09-01"
-  # end_date = "2017-10-01"
-  # variable = "tmin"
-
   analysis_dates <- seq(lubridate::as_date(start_date),
                         lubridate::as_date(end_date),
                         by = "days") %>%
@@ -167,18 +175,6 @@ arrange_data <- function(start_date, end_date, variable) {
     dplyr::mutate(diff_value = value-mesonet_value,
                   station = factor(station),
                   dataset = factor(dataset))
-}
-
-write_out_csvs <- function(start_date, end_date, variable) {
-
-  fname <- paste0("./analysis/data/derived_data/Mesonet/extracts/",
-                  variable, "_",
-                  gsub(pattern = "-", "", start_date), "_",
-                  gsub(pattern = "-", "", end_date), ".csv")
-
-  arrange_data(start_date, end_date, variable) %>%
-    readr::write_csv(path = fname)
-
 }
 
 # Writes out the most recent mesonet data you downloaded to a tidy format, then

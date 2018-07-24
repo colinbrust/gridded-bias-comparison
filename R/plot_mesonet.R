@@ -15,7 +15,7 @@ raw_time_plot <- function(dat_source,
     dplyr::filter(station == station_filter) %>%
     ggplot(aes(x = date, y = value, color = dataset)) +
       geom_line(size = 0.5) +
-      viz_mesonet(variable, "raw_time", NA) +
+      # viz_mesonet(variable, "raw_time", NA) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       facet_wrap(~station)
 
