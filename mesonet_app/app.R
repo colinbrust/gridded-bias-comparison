@@ -94,7 +94,7 @@ ui <- fluidPage(
 )
 
 #### read data ####
-dat1 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/all_20170101_20180101.csv" %>%
+dat1 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/test.csv" %>%
   readr::read_csv(col_types = readr::cols()) %>%
   dplyr::mutate(station = factor(station),
                 dataset = factor(dataset))
