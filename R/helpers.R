@@ -43,3 +43,32 @@ station_from_fname <- function(fname) {
     magrittr::extract(3)
 
 }
+
+replace_na <- function(x){
+  x[x>40000] <- NA
+  return(x)
+}
+
+replace_ppt <- function(x) {
+  x[x>30] <- NA
+  return(x)
+}
+
+variable_from_stack <- function(stack_name) {
+
+  stack_name %>%
+    stringr::str_split(pattern = "_") %>%
+    unlist() %>%
+    magrittr::extract(2)
+
+}
+
+dataset_from_stack <- function(stack_name) {
+
+  stack_name %>%
+    stringr::str_split(pattern = "_") %>%
+    unlist() %>%
+    magrittr::extract(1)
+
+}
+

@@ -6,19 +6,9 @@ aggregate_mesonet_data <- function() {
   library(readr)
   source("./R/helpers.R")
 
-  replace_na <- function(x){
-    x[x>40000] <- NA
-    return(x)
-  }
-
-  replace_ppt <- function(x) {
-    x[x>30] <- NA
-    return(x)
-  }
-
   tidy_mesonet <- function(station) {
 
-    list.files("./analysis/data/raw_data/mesonet_data", full.names = T, pattern = station) %>%
+    list.files("Y:/Data/Mesonet/ZentraTest/API-Output/ClimateOffice/Level1", full.names = T, pattern = station) %>%
       readr::read_csv(col_types = readr::cols()) %>%
       dplyr::select(`Record Number [n]`, `UTC Time [ms]`, `Precipitation [mm]`, `Air Temperature [deg C]`) %>%
       magrittr::set_colnames(c("recordnum", "utc_time", "precipitation", "temperature")) %>%
@@ -35,15 +25,15 @@ aggregate_mesonet_data <- function() {
   midnight_agg <- function(dat) {
 
     dat %>%
-      dplyr::group_by(day = lubridate::ceiling_date(utc_time, "day"), station) %>%
+      dplyr::group_by(day = lubridate::floor_date(utc_time, "day"), station) %>%
       dplyr::summarise(ppt = sum(precipitation),
                        tmin = min(temperature),
                        tmean = mean(temperature),
                        tmax = max(temperature)) %>%
-      tibble::add_column(dataset = "mesonet_midnight")
+      tibble::add_column(dataset = "mesonet_reg")
   }
 
-  noon_agg <- function(dat) {
+  ceiling_agg <- function(dat) {
 
     dat %>%
       dplyr::group_by(day = lubridate::ceiling_date(utc_time - 43200, "day"), station) %>%
@@ -51,11 +41,23 @@ aggregate_mesonet_data <- function() {
                        tmin = min(temperature),
                        tmean = mean(temperature),
                        tmax = max(temperature)) %>%
-      tibble::add_column(dataset = "mesonet_noon")
+      tibble::add_column(dataset = "mesonet_ceiling")
   }
 
-  mes_list <- lapply(list.files("./analysis/data/raw_data/mesonet_data", full.names = T),
-                     station_from_fname) %>%
+  floor_agg <- function(dat) {
+
+    dat %>%
+      dplyr::group_by(day = lubridate::floor_date(utc_time - 43200, "day"), station) %>%
+      dplyr::summarise(ppt = sum(precipitation),
+                       tmin = min(temperature),
+                       tmean = mean(temperature),
+                       tmax = max(temperature)) %>%
+      tibble::add_column(dataset = "mesonet_floor")
+  }
+
+  mes_list <- list.files("Y:/Data/Mesonet/ZentraTest/API-Output/ClimateOffice/Level1", full.names = T) %>%
+    grep("new", ., invert = T, value = T) %>%
+    lapply(station_from_fname) %>%
     lapply(tidy_mesonet)
 
   dplyr::bind_rows(
@@ -65,7 +67,11 @@ aggregate_mesonet_data <- function() {
       dplyr::bind_rows() %>% dplyr::ungroup(),
 
     mes_list %>%
-      lapply(noon_agg) %>%
+      lapply(ceiling_agg) %>%
+      dplyr::bind_rows() %>% dplyr::ungroup(),
+
+    mes_list %>%
+      lapply(floor_agg) %>%
       dplyr::bind_rows() %>% dplyr::ungroup()
 
   ) %>%
@@ -73,3 +79,4 @@ aggregate_mesonet_data <- function() {
     dplyr::mutate(date = lubridate::as_date(day)) %>%
     dplyr::select(-day)
 }
+

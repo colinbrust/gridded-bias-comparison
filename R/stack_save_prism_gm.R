@@ -28,7 +28,7 @@ last_image_date <- function(dataset, data_dir = "./analysis/data/raw_data/daily_
 
 stack_prism <- function(variable, data_dir = "./analysis/data/raw_data/daily_data") {
 
-  date_from_fname <- function(fname) {
+  date_from_fname_prism <- function(fname) {
 
     fname %>%
       basename() %>%
@@ -54,7 +54,7 @@ stack_prism <- function(variable, data_dir = "./analysis/data/raw_data/daily_dat
   date_range <- ls_prism_data(absPath = T) %>%
     magrittr::extract2(2) %>%
     grep(pattern = variable, x = ., value = T) %>%
-    lapply(date_from_fname) %>%
+    lapply(date_from_fname_prism) %>%
     unlist() %>%
     as.Date(format = "%Y%m%d")
 
@@ -64,7 +64,8 @@ stack_prism <- function(variable, data_dir = "./analysis/data/raw_data/daily_dat
 
   dat[order(date_range)] %>%
     lapply(raster::raster) %>%
-    raster::stack(quick = T)
+    raster::stack(quick = T) %>%
+    raster::crop(raster::extent(-117, -101, 43, 50))
 }
 
 stack_gridmet <- function(variable, data_dir = "./analysis/data/raw_data/daily_data") {
@@ -90,8 +91,25 @@ stack_gridmet <- function(variable, data_dir = "./analysis/data/raw_data/daily_d
 
   files_use %>%
     lapply(raster::raster) %>%
-    raster::stack(quick = FALSE)
+    raster::stack(quick = TRUE)
 
+}
+
+list_stacks <- function() {
+
+  list_stack <- list(
+    stack_gridmet("tmin"),
+    stack_gridmet("tmax"),
+    stack_gridmet("ppt"),
+    stack_prism("tmin"),
+    stack_prism("tmax"),
+    stack_prism("ppt")
+  )
+
+  names(list_stack) <- c("gridmet_tmin", "gridmet_tmax", "gridmet_ppt",
+                         "prism_tmin", "prism_tmax", "prism_ppt")
+
+  list_stack
 }
 
 download_latest <- function() {
