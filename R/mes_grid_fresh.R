@@ -3,7 +3,6 @@ mes_grid_comp <- function(time_period) {
   library(magrittr)
   library(dplyr)
   source("./R/aggregate_mesonet_data.R")
-  source("./R/extract_values.R")
   source("./R/helpers.R")
   source("./R/stack_save_prism_gm.R")
 
@@ -14,7 +13,7 @@ mes_grid_comp <- function(time_period) {
     if (time_period == "current") {
 
       date_range <- seq(lubridate::as_date("2017-01-01"),
-                        lubridate::as_date(Sys.Date() - 1), by = "day") %>%
+                        lubridate::as_date(Sys.Date() - 2), by = "day") %>%
         gsub("-", "", .)
 
       dataset_use <- dataset_from_stack(stack_name)
@@ -87,10 +86,6 @@ mes_grid_comp <- function(time_period) {
 
 add_analysis_columns <- function(dat) {
 
-  reg <- dplyr::filter(dat, dataset == "mesonet_reg") %>%
-    dplyr::rename(reg_value = value) %>%
-    dplyr::select(-dataset)
-
   floor <- dplyr::filter(dat, dataset == "mesonet_floor") %>%
     dplyr::rename(floor_value = value) %>%
     dplyr::select(-dataset)
@@ -99,14 +94,11 @@ add_analysis_columns <- function(dat) {
     dplyr::rename(ceiling_value = value) %>%
     dplyr::select(-dataset)
 
-  dplyr::left_join(reg, floor,
+  dplyr::left_join(floor, ceiling,
                    by = c("station", "date", "variable")) %>%
-    dplyr::left_join(ceiling,
-                     by = c("station", "date", "variable")) %>%
     dplyr::right_join(dat,
                       by = c("station", "date", "variable")) %>%
-    dplyr::mutate(reg_diff = value - reg_value,
-                  floor_diff = value - floor_value,
+    dplyr::mutate(floor_diff = value - floor_value,
                   ceiling_diff = value - ceiling_value)
 }
 

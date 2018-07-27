@@ -6,16 +6,31 @@
 #
 # }
 
+
+######### FIGURE OUT WHY MESONET WON'T PLOT ##############
 raw_time_plot <- function(dat_source,
                           variable,
-                          station_filter) {
+                          station_filter,
+                          agg_type) {
+
+  if (agg_type == "floor") {
+    use_value = "mesonet_ceiling"
+  } else if (agg_type == "ceiling") {
+    use_value = "mesonet_floor"
+  }
 
   dat_source %>%
-    dplyr::filter(variable == !!variable) %>%
-    dplyr::filter(station == station_filter) %>%
+    dplyr::filter(variable == !!variable,
+                  station == station_filter,
+                  dataset != use_value) %>%
+    dplyr::mutate(dataset = as.character(dataset),
+      dataset = dplyr::if_else(dataset == "mesonet_ceiling" |
+                                           dataset == "mesonet_floor",
+                                           true = "mesonet", false = dataset),
+      dataset = factor(dataset)) %>%
     ggplot(aes(x = date, y = value, color = dataset)) +
       geom_line(size = 0.5) +
-      # viz_mesonet(variable, "raw_time", NA) +
+      viz_mesonet(variable, "raw_time") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       facet_wrap(~station)
 
@@ -25,7 +40,8 @@ raw_time_plot <- function(dat_source,
 
 direct_plot <- function(dat_source,
                         variable,
-                        station_filter) {
+                        station_filter,
+                        filler = NA) {
 
   dat_source %>%
     dplyr::filter(variable == !!variable) %>%
@@ -34,7 +50,7 @@ direct_plot <- function(dat_source,
     ggplot2::ggplot(aes(x = value, y = mesonet_value, color = dataset)) +
       geom_point() +
       geom_abline(intercept = 0, colour = "red", size = 1) +
-      viz_mesonet(variable, "direct", NA) +
+      viz_mesonet(variable, "direct") +
       coord_fixed() +
       facet_wrap(~station)
 
@@ -42,15 +58,23 @@ direct_plot <- function(dat_source,
 
 time_plot <- function(dat_source,
                       variable,
-                      station_filter) {
+                      station_filter,
+                      agg_type) {
+
+  if (agg_type == "floor")
+    diff_value = rlang::sym("floor_diff")
+  else if (agg_type == "ceiling")
+    diff_value = rlang::sym("ceiling_diff")
+
 
   dat_source %>%
     dplyr::filter(variable == !!variable) %>%
     dplyr::filter(station == station_filter) %>%
-    dplyr::filter(dataset != "mesonet") %>%
-    ggplot(aes(x = date, y = diff_value, color = dataset)) +
+    dplyr::filter(dataset != "mesonet_ceiling" &
+                    dataset != "mesonet_floor") %>%
+    ggplot(aes(x = date, y = !!diff_value, color = dataset)) +
       geom_line(size = 0.5) +
-      viz_mesonet(variable, "time", NA) +
+      viz_mesonet(variable, "time") +
       geom_hline(yintercept=0, colour="red", size=1) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       facet_wrap(~station)
@@ -74,10 +98,10 @@ var_plot <- function(dat_source,
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
 }
 
-viz_mesonet <- function(variable, type, by_var) {
+viz_mesonet <- function(variable, type) {
 
-  myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD", "red")
-  names(myColors) <- c("prism", "daymet", "gridmet", "chirps", "mesonet")
+  myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD", "#000000")
+  names(myColors) <- c("prism", "daymet", "gridmet", "chirps","mesonet")
 
   if (variable == "tmax" || variable == "tmin") {
     suffix <-  "Temperature"

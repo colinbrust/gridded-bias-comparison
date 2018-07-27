@@ -50,6 +50,10 @@ ui <- fluidPage(
                                "Date vs Deviation from Mesonet" = "time_plot",
                                "Mesonet vs Gridded Data" = "direct_plot")),
 
+          radioButtons("agg_type", "Day Definition Method",
+                       c("Local Midnight" = "floor",
+                       "UTC Noon" = "ceiling")),
+
           checkboxInput("current", "Show Live Data", FALSE)
         ), # end sidebarPanel
 
@@ -94,17 +98,15 @@ ui <- fluidPage(
 )
 
 #### read data ####
-dat1 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/test.csv" %>%
+dat1 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_2017.csv" %>%
   readr::read_csv(col_types = readr::cols()) %>%
   dplyr::mutate(station = factor(station),
                 dataset = factor(dataset))
 
-dat2 <- list.files("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts",
-                   full.names = T,
-                   pattern = "mes_grid") %>% readr::read_csv() %>%
-  dplyr::mutate(date = lubridate::as_datetime(date)) %>%
-  dplyr::mutate(date = dplyr::if_else(dataset == "prism", true = date - 86400,
-                                      false = date))
+dat2 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_current.csv" %>%
+  readr::read_csv(col_types = readr::cols()) %>%
+  dplyr::mutate(station = factor(station),
+                dataset = factor(dataset))
 
 #### server function ####
 server <- function(input, output, session) {
@@ -132,7 +134,7 @@ server <- function(input, output, session) {
                                    "Lubrecht" = "lubrecht",
                                    "Moccasin" = "moccasin",
                                    "Molt West" = "moltwest",
-                                   "Rapple J" = "rapplejen",
+                                   "Rapple J" = "raplejen",
                                    "Reed Point" = "reedpoin",
                                    "Sidney" = "sidneymt",
                                    "Suat" = "suatnasa",
@@ -166,7 +168,8 @@ server <- function(input, output, session) {
 
     plot_type(use_dat,
               input$variable,
-              input$station)
+              input$station,
+              input$agg_type)
    })
 
   output$varPlot <- plotly::renderPlotly({

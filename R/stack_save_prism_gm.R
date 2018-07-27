@@ -121,13 +121,13 @@ download_latest <- function() {
     lubridate::as_date() %>%
     magrittr::add(1)
 
-  if (gm_date == Sys.Date()) {
+  if (gm_date == Sys.Date() - 1) {
 
     print("Gridmet is up to date")
 
   } else {
 
-    seq(gm_date, Sys.Date() - 1, by = "days") %>%
+    seq(gm_date, Sys.Date() - 2, by = "days") %>%
       lapply(get_gridmet_daily)
 
   }
@@ -137,13 +137,13 @@ download_latest <- function() {
     lubridate::as_date() %>%
     magrittr::add(1)
 
-  if (pris_date == Sys.Date()) {
+  if (pris_date == Sys.Date() - 1) {
 
     print("Prism is up to date")
 
   } else {
 
-    seq(pris_date, Sys.Date() - 1, by = "days") %>%
+    seq(pris_date, Sys.Date() - 2, by = "days") %>%
       lapply(get_prism_daily)
 
   }
