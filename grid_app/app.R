@@ -65,8 +65,8 @@ ui <- shinyUI(fluidPage(
                sidebarPanel(
 
                  selectInput("type2", "Elevation Plot Type:",
-                             c("Deviation from Ensemble Average" = "devF",
-                               "Raw Dataset Values" = "devT",
+                             c("Deviation from Ensemble Average" = "devT",
+                               "Raw Dataset Values" = "devF",
                                "Elevation w/ Map of Climate Divisions" = "maps"
                              )),
 

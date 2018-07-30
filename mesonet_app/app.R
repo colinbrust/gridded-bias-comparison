@@ -12,18 +12,14 @@ library(ggplot2)
 library(magrittr)
 library(dplyr)
 library(readr)
+library(kableExtra)
 source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/plot_mesonet.R")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
   # Application title
-  titlePanel("Compaison of Gridded and Mesonet Data from 2017-01-01 to 2018-01-01"),
-
-  tabsetPanel(
-
-    #### Mesonet Comparison ####
-    tabPanel("Mesonet Comparison",
+  titlePanel("Comparison of Gridded Data and Mesonet Data"),
 
       # Sidebar with a slider input for number of bins
       sidebarLayout(
@@ -31,14 +27,14 @@ ui <- fluidPage(
         sidebarPanel(
 
           selectInput("station", "Mesonet Station:",
-                      c("Conrad" = "conradmt",
-                        "Corvallis" = "corvalli",
-                        "E Bar L" = "ebarllob",
-                        "Havre" = "havrenmt",
-                        "Huntley's" = "huntleys",
-                        "Kalispell" = "kalispel",
-                        "Moccasin" = "moccasin",
-                        "Sidney" = "sidneymt")),
+                      c("Conrad ARC" = "conradmt",
+                        "Corvallis ARC" = "corvalli",
+                        "Clearwater SW" = "ebarllob",
+                        "Havre ARC" = "havrenmt",
+                        "Huntley ARC" = "huntleys",
+                        "Kalispell ARC" = "kalispel",
+                        "Moccasin ARC" = "moccasin",
+                        "Sidney ARC" = "sidneymt")),
 
           selectInput("variable", "Variable:",
                       c("Maximum Temperature" = "tmax",
@@ -48,7 +44,8 @@ ui <- fluidPage(
           radioButtons("type", "Plot Type:",
                              c("Date vs Value" = "raw_time_plot",
                                "Date vs Deviation from Mesonet" = "time_plot",
-                               "Mesonet vs Gridded Data" = "direct_plot")),
+                               "Mesonet vs Gridded Data" = "direct_plot",
+                               "Cumulative Plot" = "cumsum_plot")),
 
           radioButtons("agg_type", "Day Definition Method",
                        c("Local Midnight" = "floor",
@@ -58,55 +55,28 @@ ui <- fluidPage(
         ), # end sidebarPanel
 
         mainPanel(
-          plotly::plotlyOutput("mesPlot")
+          plotly::plotlyOutput("mesPlot"),
+          tableOutput("err_table")
         ) #end mainPanel
 
       ) # end sidebar layout
 
-    ), # end first tabPanel
-
-    #### Mesonet Variable Comparison ####
-    tabPanel("Mesonet Variable Comparison",
-       # Sidebar with a slider input for number of bins
-       sidebarLayout(
-
-         sidebarPanel(
-
-           selectInput("variable2", "Variable:",
-                       c("Maximum Temperature" = "tmax",
-                         "Minimum Temperature" = "tmin",
-                         "Precipitation" = "ppt")),
-
-           selectInput("var", "Comparison Variable:",
-                        c("Elevation" = "Elevation",
-                          "Slope" = "Slope",
-                          "Aspect" = "Aspect",
-                          "Landform" = "Landform")),
-
-           checkboxInput("current2", "Show Live Data", FALSE)
-         ), # end sidebarPanel
-
-         mainPanel(
-           plotly::plotlyOutput("varPlot")
-         ) #end mainPanel
-
-       ) # end sidebar layout
-
-    )
-
-  ) # end tabsetPanel
 )
 
 #### read data ####
-dat1 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_2017.csv" %>%
+dat_2017 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_2017.csv" %>%
   readr::read_csv(col_types = readr::cols()) %>%
-  dplyr::mutate(station = factor(station),
-                dataset = factor(dataset))
+  dplyr::filter(date >= lubridate::as_date("2017-01-01"))
 
-dat2 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_current.csv" %>%
+error_2017 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/error/error_2017.csv" %>%
+  readr::read_csv(col_types = readr::cols())
+
+dat_current <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_current.csv" %>%
   readr::read_csv(col_types = readr::cols()) %>%
-  dplyr::mutate(station = factor(station),
-                dataset = factor(dataset))
+  dplyr::filter(date >= lubridate::as_date("2017-01-01"))
+
+error_current <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/error/error_current.csv" %>%
+  readr::read_csv(col_types = readr::cols())
 
 #### server function ####
 server <- function(input, output, session) {
@@ -116,27 +86,27 @@ server <- function(input, output, session) {
     if(input$current) {
 
       updateSelectInput(session, "station",
-                        choices = list("Ft. Keogh" = "arskeogh",
-                                   "Benton Lake" = "bentlake",
-                                   "Argenta" = "blm1arge",
-                                   "Virginia City" = "blm2virg",
-                                   "BLM MCCA" = "blm3mcca",
-                                   "BLM Kidd" = "blm5kidd",
+                        choices = list("Fort Keogh ARS N" = "arskeogh",
+                                   "Benton Lake W" = "bentlake",
+                                   "Argenta BLM" = "blm1arge",
+                                   "Virginia City BLM" = "blm2virg",
+                                   "McCartney Mtn BLM" = "blm3mcca",
+                                   "Kidd BLM" = "blm5kidd",
                                    "Churchill" = "churchil",
-                                   "Conrad" = "conradmt",
-                                   "Corvallis" = "corvalli",
-                                   "Crow Agency" = "crowagen",
-                                   "E Bar L" = "ebarllob",
-                                   "Ft. Benton" = "ftbentcb",
-                                   "Havre" = "havrenmt",
-                                   "Huntley's" = "huntleys",
-                                   "Kalispell" = "kalispel",
-                                   "Lubrecht" = "lubrecht",
-                                   "Moccasin" = "moccasin",
-                                   "Molt West" = "moltwest",
-                                   "Rapple J" = "raplejen",
-                                   "Reed Point" = "reedpoin",
-                                   "Sidney" = "sidneymt",
+                                   "Conrad ARC" = "conradmt",
+                                   "Corvallis ARC" = "corvalli",
+                                   "Crow Agency E" = "crowagen",
+                                   "Clearwater SW" = "ebarllob",
+                                   "Fort Benton E" = "ftbentcb",
+                                   "Havre ARC" = "havrenmt",
+                                   "Huntley ARC" = "huntleys",
+                                   "Kalispell ARC" = "kalispel",
+                                   "Lubrecht Forest" = "lubrecht",
+                                   "Moccasin ARC" = "moccasin",
+                                   "Molt W" = "moltwest",
+                                   "Rapleje N" = "raplejen",
+                                   "Reed Point NE" = "reedpoin",
+                                   "Sidney ARC" = "sidneymt",
                                    "Suat" = "suatnasa",
                                    "Turek Ranch" = "turekran"))
     } else{
@@ -157,31 +127,54 @@ server <- function(input, output, session) {
 
   output$mesPlot <- plotly::renderPlotly({
 
-    if(input$current) use_dat <- dat2
-    else use_dat <- dat1
+    if(input$current) use_dat <- dat_current
+    else use_dat <- dat_2017
 
 
     plot_type <- switch(input$type,
                         raw_time_plot = raw_time_plot,
                         time_plot = time_plot,
-                        direct_plot = direct_plot)
+                        direct_plot = direct_plot,
+                        cumsum_plot = cumsum_plot)
 
     plot_type(use_dat,
               input$variable,
               input$station,
               input$agg_type)
+
+
    })
 
-  output$varPlot <- plotly::renderPlotly({
+  output$err_table <- function() {
 
-    if(input$current) use_dat <- dat2
-    else use_dat <- dat1
+    if(input$current) use_err <- error_current
+    else use_err <- error_2017
 
-    var_plot(use_dat,
-             input$variable2,
-             input$var)
+    if (input$agg_type == "floor") {
 
-  })
+      use_err <- use_err %>%
+        dplyr::select(-contains("ce"))
+
+    } else if (input$agg_type == "ceiling") {
+
+      use_err <- use_err %>%
+        dplyr::select(-contains("fl"))
+    }
+
+    use_err %>%
+      dplyr::filter(variable == input$variable,
+                    station == input$station) %>%
+      dplyr::select(-variable, -station) %>%
+      magrittr::set_colnames(c("Dataset",
+                               "Mean Absolute Error",
+                               "Pearson's R",
+                               "Mean Bias",
+                               "Median Bias")) %>%
+      knitr::kable(caption = "Error Statistics for Gridded Data vs Mesonet Data") %>%
+        kableExtra::kable_styling(full_width = T,
+                                  bootstrap_options = c("striped", "hover", "condensed"),
+                                  position = "center")
+  }
 
 
 }
