@@ -2,6 +2,7 @@
 # in the "make_map" function.
 
 # function that removes a lot of the default map aesthetics
+# taken from the montana drought github
 mdt_theme_map <- function(base_size = 6.5,
                           base_family = "") {
   ggplot2::theme_bw(base_size = base_size,
