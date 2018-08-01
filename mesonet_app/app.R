@@ -112,14 +112,14 @@ server <- function(input, output, session) {
     } else{
 
       updateSelectInput(session, "station",
-                        choices = list("Conrad" = "conradmt",
-                                        "Corvallis" = "corvalli",
-                                        "E Bar L" = "ebarllob",
-                                        "Havre" = "havrenmt",
-                                        "Huntley's" = "huntleys",
-                                        "Kalispell" = "kalispel",
-                                        "Moccasin" = "moccasin",
-                                        "Sidney" = "sidneymt"))
+                        choices = list("Conrad ARC" = "conradmt",
+                                        "Corvallis ARC" = "corvalli",
+                                        "Clearwater SW" = "ebarllob",
+                                        "Havre ARC" = "havrenmt",
+                                        "Huntley ARC" = "huntleys",
+                                        "Kalispell ARC" = "kalispel",
+                                        "Moccasin ARC" = "moccasin",
+                                        "Sidney ARC" = "sidneymt"))
     }
 
   })

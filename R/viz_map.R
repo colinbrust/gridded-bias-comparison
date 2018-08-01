@@ -1,5 +1,9 @@
 # These are a set of functions that determine the aesthetics of the maps made
-# in the "make_map" function.
+# in the "make_map" function. They also provide aesthetics for maps made in
+# "2018_analysis.R".
+
+# mdt_theme_map, add_hillshade, and get_df are taken from:
+# github.com/mt-climate-office/mtdrought/R
 
 # function that removes a lot of the default map aesthetics
 # taken from the montana drought github
@@ -80,4 +84,87 @@ pal <- function(dev, variable) {
 
     }
   }
+}
+
+# add hillshade to a map of Montana
+add_hillshade <- function(){
+
+  # Plot the hillshade using the "alpha hack"
+  list(
+    ggplot2::geom_raster(data = mcor::mt_hillshade_500m %>%
+                           get_df(),
+                         mapping = aes(x = x,
+                                       y = y,
+                                       alpha = ID),
+                         na.rm = TRUE),
+    scale_alpha(range = c(0.8, 0),
+                na.value = 0,
+                limits = c(0,255),
+                guide = "none")
+  )
+}
+
+# helper function for add_hillshade
+get_df <- function(x){
+  library(raster)
+  out <- cbind(xyFromCell(x, seq_len(ncell(x))),
+               tibble::tibble(ID = getValues(x))) %>%
+    tibble::as_tibble()
+
+  if(is.factor(x)){
+
+    levels <- levels(x)[[1]] %>%
+      dplyr::mutate_all(.funs = funs(ordered)) %>%
+      tibble::as_tibble()
+
+    fact <- out$ID %>%
+      ordered(levels = levels(levels$ID))
+    out %<>%
+      dplyr::mutate(ID = fact) %>%
+      dplyr::left_join(levels)
+  }
+
+  return(out)
+}
+
+# visualization for best_fit_map in "2018_analysis.R"
+viz_best <- function() {
+
+  myColors <- c("#FFC857", "#E9724C", "#6d976d", "#255F85", "#F9DBBD")
+  names(myColors) <- c("topowx", "prism", "daymet", "gridmet", "chirps")
+
+  list(scale_color_manual(name = "Dataset", values = myColors))
+}
+
+# visualization for error_map in "2018_analysis.R"
+viz_error <- function(metric) {
+
+  if(metric == "mae") {
+
+    return(list(
+      scale_color_distiller(palette = "Reds",  direction = 1,
+                            space = "Lab", name = "Mean Absolute\nError",
+                            limit = c(0, 4.1))
+    ))
+  } else if (metric == "r2") {
+
+    return(list(
+      scale_color_distiller(palette = "Reds",  direction = 1,
+                            space = "Lab", name = "Pearson's r\nCorrelation",
+                            limit = c(0, 1))
+    ))
+  } else if (metric == "mean_bias") {
+    return(list(
+      scale_color_distiller(palette = "RdBu",  direction = -1,
+                            space = "Lab", name = "Mean Bias",
+                            limit = c(-3, 4))
+    ))
+  } else if (metric == "median_bias") {
+    return(list(
+      scale_color_distiller(palette = "RdBu",  direction = -1,
+                            space = "Lab", name = "Median Bias",
+                            limit = c(-3, 4))
+    ))
+  }
+
 }

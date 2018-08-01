@@ -1,8 +1,8 @@
-library(mcor)
-
-
+#### Arrange data for error mapping ####
 
 error_2018 <- function() {
+
+  library(mcor)
 
   mes_sites <- sf::read_sf("./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp")
 
@@ -110,17 +110,48 @@ error_2018 <- function() {
     readr::write_csv("./analysis/data/derived_data/Mesonet/error/error_summer_2018.csv")
 }
 
+#### Creates reference map showing station names and elevations ####
 
+reference_map <- function() {
 
+  library(sf)
+  library(ggrepel)
+  source("./R/viz_map.R")
 
-error <- readr::read_csv("./analysis/data/derived_data/Mesonet/error/error_summer_2018.csv") %>%
+  dat <- sf::read_sf("./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp") %>%
+    sf::st_transform(102300) %>%
+    dplyr::mutate(lon= purrr::map_dbl(geometry, ~st_centroid(.x)[[1]]),
+                  lat= purrr::map_dbl(geometry, ~st_centroid(.x)[[2]])) %>%
+    dplyr::right_join(readr::read_csv("./analysis/data/derived_data/Mesonet/error/error_summer_2018.csv",
+                                      col_types = readr::cols()) %>%
+                        dplyr::filter(station != "lololowr")) %>%
+    dplyr::filter(dataset == "prism", variable == "tmax")
+
+    ggplot2::ggplot() +
+      geom_sf(data = mcor::mt_state, fill = 'gray40', alpha = 0.1) +
+      add_hillshade() +
+      geom_sf(data = dat, aes(color = Elevation), size = 3) +
+      geom_label_repel(data = dat, aes(x = lon, y = lat, label = full_name)) +
+      mdt_theme_map() +
+      scale_color_distiller(palette = "Spectral",  direction = -1,
+                            space = "Lab", name = "Elevation",
+                            limit = c(500, 2500)) +
+      geom_sf(data = dat, color = "black", pch = 21, size = 3) +
+      labs(title = "Location and Elevation of Montana Mesonet Sites")
+}
+
+#### Function that shows errors in a map ####
+error <- readr::read_csv("./analysis/data/derived_data/Mesonet/error/error_summer_2018.csv",
+                                  col_types = readr::cols()) %>%
   dplyr::filter(station != "lololowr")
 
 error_map <- function(dat, metric, dataset, variable) {
 
   library(sf)
+  library(ggplot2)
   library(ggrepel)
   source("./R/viz_map.R")
+  source("./R/rename_arguments.R")
 
   dat <- dat %>%
     dplyr::select(station, dataset, variable, Elevation,
@@ -130,72 +161,90 @@ error_map <- function(dat, metric, dataset, variable) {
 
   dat <- sf::read_sf("./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp") %>%
     dplyr::right_join(dat) %>%
-    sf::st_transform(102300) %>%
-    mutate(lon= purrr::map_dbl(geometry, ~st_centroid(.x)[[1]]),
-           lat= purrr::map_dbl(geometry, ~st_centroid(.x)[[2]]))
+    sf::st_transform(102300)
 
   ggplot2::ggplot() +
     geom_sf(data = mcor::mt_state, fill = 'gray40', alpha = 0.1) +
+    add_hillshade() +
     geom_sf(data = dat, aes_string(color = metric), size = 3) +
-    geom_label_repel(data = dat, aes(x = lon, y = lat, label = full_name)) +
     mdt_theme_map() +
     viz_error(metric) +
-    geom_sf(data = dat, color = "black", pch = 21, size = 3)
+    geom_sf(data = dat, color = "black", pch = 21, size = 3) +
+    labs(title = paste(new_metric(metric),
+                       "for",
+                       new_dataset(dataset),
+                       new_variable(variable),
+                       "at Each Mesonet Station"))
+
+  ggplot2::ggsave(filename = paste0("./analysis/figures/mes_analysis/", metric,
+                                    "_", dataset, "_", variable, ".png"),
+                  width = 14, height = 10, units = "in",
+                  device = "png", dpi = "print")
 
 }
 
-viz_error <- function(metric) {
-
-  if(metric == "mae") {
-
-    return(list(
-      scale_color_distiller(palette = "Reds",  direction = 1,
-                            space = "Lab", name = "Mean Absolute\nError",
-                            limit = c(0, 4.1))
-    ))
-  } else if (metric == "r2") {
-
-    return(list(
-      scale_color_distiller(palette = "Reds",  direction = 1,
-                            space = "Lab", name = "Pearson's r\nCorrelation",
-                            limit = c(0, 1))
-    ))
-  } else if (metric == "mean_bias") {
-    return(list(
-      scale_color_distiller(palette = "RdBu",  direction = -1,
-                            space = "Lab", name = "Mean Bias",
-                            limit = c(-3, 4))
-    ))
-  } else if (metric == "median_bias") {
-    return(list(
-      scale_color_distiller(palette = "RdBu",  direction = -1,
-                            space = "Lab", name = "Median Bias",
-                            limit = c(-3, 4))
-    ))
-  }
-
-}
-
-
-
+#### Map the best dataset for each station location ####
 
 best_fit_map <- function(dat, metric, variable) {
 
-  dat %>%
+  library(ggplot2)
+  source("./R/viz_map.R")
+  source("./R/rename_arguments.R")
+
+  best_fit <- function(dataset, value, metric) {
+
+    switch(metric,
+           "r2" = dataset[which(value == max(value))],
+           "mae" = dataset[which(value == min(value))],
+           "mean_bias" = dataset[which(abs(value) == min(abs(value)))],
+           "median_bias" = dataset[which(abs(value) == min(abs(value)))])
+  }
+
+ dat <- dat %>%
     dplyr::select(station, dataset, variable, Elevation,
                   Landform, Aspect, Slope, metric) %>%
     dplyr::filter(variable == !!variable) %>%
     dplyr::rename(value = metric) %>%
     dplyr::group_by(station, variable) %>%
-    {dplyr::summarise(., best = best_fit(., metric))}
+    dplyr::summarise(best = best_fit(dataset, value, metric))
+
+  dat <- sf::read_sf("./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp") %>%
+    dplyr::right_join(dat) %>%
+    sf::st_transform(102300)
+
+  ggplot2::ggplot() +
+    geom_sf(data = mcor::mt_state, fill = 'gray40', alpha = 0.1) +
+   add_hillshade() +
+    geom_sf(data = dat, aes(color = best), size = 3) +
+    mdt_theme_map() +
+    geom_sf(data = dat, color = "black", pch = 21, size = 3) +
+    viz_best() +
+    labs(title = paste("Most Accurate Gridded Dataset at Each Mesonet Staton\n",
+                       "for",
+                       new_variable(variable),
+                       "Based on",
+                       new_metric(metric)))
+
+  ggplot2::ggsave(filename = paste0("./analysis/figures/mes_analysis/best_",
+                                    metric, "_", variable, ".png"),
+                  width = 14, height = 10, units = "in",
+                  device = "png", dpi = "print")
 }
 
-best_fit <- function(dat, metric) {
+dat1 <- expand.grid(c("r2", "mae", "mean_bias", "median_bias"),
+                    c("prism", "gridmet", "daymet"),
+                    c("tmin", "tmax", "ppt"),
+                    stringsAsFactors = FALSE)
+for(i in 1:nrow(dat1)) {
 
-  if(metric == "mae" | metric == "mean_bias" | metric == "median_bias")
-    dat$dataset[dat$value == min(dat$value)]
-  else
-    dat$dataset[dat$value == max(dat$value)]
-
+  error_map(dat1$Var1[i], dat1$Var2[i], dat1$Var3[i])
 }
 
+dat2 <- expand.grid(c("r2", "mae", "mean_bias", "median_bias"),
+                    c("tmin", "tmax", "ppt"),
+                    stringsAsFactors = FALSE)
+
+for(i in 1:nrow(dat2)) {
+
+  best_fit_map(dat2$Var1[i], dat2$Var2[i])
+}
