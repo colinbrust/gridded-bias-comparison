@@ -25,7 +25,7 @@ aggregate_mesonet_data <- function() {
   ceiling_agg <- function(dat) {
 
     dat %>%
-      dplyr::group_by(day = lubridate::ceiling_date(local_date - 43200, "day"), station) %>%
+      dplyr::group_by(day = lubridate::ceiling_date(local_date, "day"), station) %>%
       dplyr::summarise(ppt = sum(precipitation),
                        tmin = min(temperature),
                        tmean = mean(temperature),
@@ -36,7 +36,7 @@ aggregate_mesonet_data <- function() {
   floor_agg <- function(dat) {
 
     dat %>%
-      dplyr::group_by(day = lubridate::floor_date(local_date - 43200, "day"), station) %>%
+      dplyr::group_by(day = lubridate::floor_date(local_date, "day"), station) %>%
       dplyr::summarise(ppt = sum(precipitation),
                        tmin = min(temperature),
                        tmean = mean(temperature),

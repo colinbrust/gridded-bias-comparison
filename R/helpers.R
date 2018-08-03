@@ -72,3 +72,37 @@ dataset_from_stack <- function(stack_name) {
 
 }
 
+stations_2018 <- function() {
+
+  list(c("arskeogh", "bentlake", "blm1arge",
+         "blm2virg", "blm3mcca", "blm5kidd",
+         "churchil", "conradmt", "corvalli",
+         "crowagen", "ebarllob", "ftbentcb",
+         "havrenmt", "huntleys", "kalispel",
+         "lubrecht", "moccasin", "moltwest",
+         "raplejen", "reedpoin", "sidneymt",
+         "suatnasa", "turekran"),
+       c("Fort Keogh ARS N", "Benton Lake W",
+         "Argenta BLM", "Virginia City BLM",
+         "McCartney Mtn BLM", "Kidd BLM",
+         "Churchill", "Conrad ARC",
+         "Corvallis ARC", "Crow Agency E",
+         "Clearwater SW", "Fort Benton E",
+         "Havre ARC", "Huntley ARC",
+         "Kalispell ARC", "Lubrecht Forest",
+         "Moccasin ARC", "Molt W",
+         "Rapleje N", "Reed Point NE",
+         "Sidney ARC", "Suat",
+         "Turek Ranch"))
+}
+
+stations_2017 <- function() {
+
+  list(c("conradmt", "corvalli", "ebarllob",
+         "havrenmt", "huntleys", "kalispel",
+         "moccasin", "sidneymt"),
+       c("Conrad ARC", "Corvallis ARC",
+         "Clearwater SW", "Havre ARC",
+         "Huntley ARC", "Kalispell ARC",
+         "Moccasin ARC", "Sidney ARC"))
+}
