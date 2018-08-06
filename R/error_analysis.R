@@ -116,12 +116,6 @@ mae_analysis <- function(variable, year) {
   library(ggplot2)
   library(magrittr)
 
-  grouped_mae <- function(abs_error) {
-
-
-  }
-
-
   if(year == 2018) {
 
     analysis_dates <- seq(lubridate::as_date("2017-01-01"),
@@ -158,9 +152,81 @@ mae_analysis <- function(variable, year) {
     dplyr::filter(!is.na(mes_value)) %>%
     dplyr::mutate(abs_error = abs(value - mes_value)) %>%
     dplyr::group_by(date, dataset) %>%
-    dplyr::mutate(mae_dataset = sum(abs_error)/dplyr::n()) %>%
-    ggplot2::ggplot(aes(x = date, y = mae_dataset, color = dataset)) +
-      geom_line(size = 1)
+    dplyr::mutate(mae_dataset = sum(abs_error)/dplyr::n())
 }
 
 
+var_t_test <- function(variable) {
+
+
+
+
+ dat <- mae_analysis(variable, 2018) %>%
+   dplyr::filter(date >= as.Date("2017-05-01")) %>%
+   dplyr::filter(date <= as.Date("2018-05-01")) %>%
+   dplyr::select(date, dataset, mae_dataset) %>%
+   dplyr::ungroup() %>%
+   dplyr::distinct()
+
+ pris <- dat %>%
+   dplyr::filter(dataset == "prism")
+
+ grid <- dat %>%
+   dplyr::filter(dataset == "gridmet")
+
+ t.test(pris$mae_dataset, grid$mae_dataset)
+
+}
+
+time_t_test <- function(variable, win) {
+
+  start_date <- lubridate::as_date("2017-05-01")
+  end_date   <- start_date + (win - 1)
+
+  p_vals <- rep(0, 366)
+
+  dat <- mae_analysis(variable, 2018)
+
+  while(end_date <= as.Date("2018-05-01")) {
+
+    analysis_dates <- seq(start_date, end_date, by = "days")
+
+    counter = 1
+
+    temp_dat <- dat %>%
+      dplyr::filter(date %in% analysis_dates) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(dataset, mae_dataset) %>%
+      dplyr::distinct()
+
+    pris <- temp_dat %>%
+      dplyr::filter(dataset == "prism") %>%
+      {.$mae_dataset}
+
+    grid <- temp_dat %>%
+      dplyr::filter(dataset == "gridmet") %>%
+      {.$mae_dataset}
+
+    p_vals[[counter]] <- t.test(pris, grid) %>%
+    {.$p.value}
+
+    print(end_date)
+
+    start_date <- start_date + 1
+    end_date <- end_date + 1
+    counter <- counter + 1
+
+  }
+
+
+}
+
+
+
+
+plot_grouped_mae <- function(dat) {
+
+  dat %>%
+    ggplot2::ggplot(aes(x = date, y = mae_dataset, color = dataset)) +
+      geom_line(size = 1)
+}
