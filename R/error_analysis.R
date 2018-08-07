@@ -156,77 +156,71 @@ mae_analysis <- function(variable, year) {
 }
 
 
-var_t_test <- function(variable) {
+plot_mae_analysis <- function(dat) {
 
-
-
-
- dat <- mae_analysis(variable, 2018) %>%
-   dplyr::filter(date >= as.Date("2017-05-01")) %>%
-   dplyr::filter(date <= as.Date("2018-05-01")) %>%
-   dplyr::select(date, dataset, mae_dataset) %>%
-   dplyr::ungroup() %>%
-   dplyr::distinct()
-
- pris <- dat %>%
-   dplyr::filter(dataset == "prism")
-
- grid <- dat %>%
-   dplyr::filter(dataset == "gridmet")
-
- t.test(pris$mae_dataset, grid$mae_dataset)
-
+  dat %>%
+    ggplot2::ggplot(aes(x = date, y = mae_dataset, color = dataset)) +
+    geom_line(size = 1)
 }
 
 time_t_test <- function(variable, win) {
 
-  start_date <- lubridate::as_date("2017-05-01")
-  end_date   <- start_date + (win - 1)
+  dat_in <- mae_analysis(variable, 2018)
 
-  p_vals <- rep(0, 366)
+  calc_t <- function(analysis_dates, dat) {
 
-  dat <- mae_analysis(variable, 2018)
-
-  while(end_date <= as.Date("2018-05-01")) {
-
-    analysis_dates <- seq(start_date, end_date, by = "days")
-
-    counter = 1
-
-    temp_dat <- dat %>%
+    dat %>%
       dplyr::filter(date %in% analysis_dates) %>%
       dplyr::ungroup() %>%
       dplyr::select(dataset, mae_dataset) %>%
-      dplyr::distinct()
-
-    pris <- temp_dat %>%
-      dplyr::filter(dataset == "prism") %>%
-      {.$mae_dataset}
-
-    grid <- temp_dat %>%
-      dplyr::filter(dataset == "gridmet") %>%
-      {.$mae_dataset}
-
-    p_vals[[counter]] <- t.test(pris, grid) %>%
-    {.$p.value}
-
-    print(end_date)
-
-    start_date <- start_date + 1
-    end_date <- end_date + 1
-    counter <- counter + 1
-
+      dplyr::distinct() %>%
+      split(.$dataset) %>%
+      {t.test(.[[1]]$mae_dataset, .[[2]]$mae_dataset)} %>%
+      {c(.$p.value, .$estimate[1], .$estimate[2])} %>%
+      unname()
   }
 
+  date_list <- seq(lubridate::as_date("2017-05-01"),
+      lubridate::as_date("2018-05-01"),
+      by = "days")
 
+  test <- date_list %>%
+    lapply(function(x) {seq(lubridate::as_date(x),
+                            lubridate::as_date(x) + win,
+                            by = "days")}) %>%
+    lapply(calc_t, dat = dat_in) %>%
+    do.call(rbind, .) %>%
+    tibble::as_tibble() %>%
+    magrittr::set_colnames(c("p_value", "mae_gridmet", "mae_prism")) %>%
+    tibble::add_column(date = date_list)
+
+}
+
+plot_t_test <- function(dat, stat) {
+
+  if(stat == "mean") {
+
+    dat %>%
+      dplyr::filter(pvalue != 0) %>%
+      ggplot2::ggplot() +
+        geom_line(aes(x = date, y = mae_prism, color = 'red'), size = 1) +
+        geom_line(aes(x = date, y = mae_gridmet, color = 'blue'), size = 1) +
+        scale_color_discrete(name = "Dataset", labels = c("Gridmet", "PRISM")) %>%
+      return()
+
+  } else if (stat == "p") {
+
+    dat %>%
+      dplyr::filter(pvalue != 0) %>%
+      ggplot2::ggplot(aes(x = date, y = pvalue)) +
+        geom_line(color = 'black', size = 1) +
+        scale_color_discrete(name = "p-value", labels = 'p-value') %>%
+      return()
+
+  }
 }
 
 
 
 
-plot_grouped_mae <- function(dat) {
 
-  dat %>%
-    ggplot2::ggplot(aes(x = date, y = mae_dataset, color = dataset)) +
-      geom_line(size = 1)
-}
