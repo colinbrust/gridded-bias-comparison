@@ -14,12 +14,17 @@ library(dplyr)
 library(readr)
 library(kableExtra)
 source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/plot_mesonet.R")
+source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/error_analysis.R")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
   # Application title
   titlePanel("Comparison of Gridded Data and Mesonet Data"),
+
+  tabsetPanel(
+    #### Box, Density and Correlation Plots ####
+    tabPanel("Box, Density, and Correlation Plots",
 
       # Sidebar with a slider input for number of bins
       sidebarLayout(
@@ -61,7 +66,39 @@ ui <- fluidPage(
 
       ) # end sidebar layout
 
-)
+    ),# end first tab panel
+
+    tabPanel("Mesonet-Gridded T-Test Results",
+
+       # Sidebar with a slider input for number of bins
+       sidebarLayout(
+
+         sidebarPanel(
+
+           selectInput("variable2", "Variable:",
+                       c("Maximum Temperature" = "tmax",
+                         "Minimum Temperature" = "tmin",
+                         "Precipitation" = "ppt")),
+
+           radioButtons("year", "Year:",
+                        c("2017" = 2017,
+                          "2018" = 2018)),
+
+           sliderInput("win", "Window (# of Days)",
+                       min = 5, max = 50, value = 1)
+         ), # end sidebarPanel
+
+         mainPanel(
+           plotOutput("errPlot")
+         ) #end mainPanel
+
+       ) #end sidebarLayout
+
+    )# end tabpanel
+
+  )# end tabsetpanel
+
+)# end fluidpage
 
 #### read data ####
 dat_2017 <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_2017.csv" %>%
@@ -174,6 +211,11 @@ server <- function(input, output, session) {
         kableExtra::kable_styling(full_width = T,
                                   bootstrap_options = c("striped", "hover", "condensed"),
                                   position = "center")
+  }
+
+  output$errPlot <- function() {
+
+    plot_t_test(input$variable2, input$year, input$win)
   }
 
 

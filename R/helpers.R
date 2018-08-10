@@ -1,3 +1,11 @@
+datasets_from_column <- function(column) {
+
+  column[1] %>%
+    stringr::str_split(string = ., pattern = "-", simplify = F) %>%
+    unlist()
+}
+
+
 dates_from_fname <- function(fname) {
 
   fname %>%

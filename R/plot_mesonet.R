@@ -45,34 +45,33 @@ raw_time_plot <- function(dat_source,
       facet_wrap(~station)
 }
 
-# reference_map <- function() {
-#
-#   library(sf)
-#   library(ggrepel)
-#   source("./R/viz_map.R")
-#
-#   dat <- sf::read_sf("./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp") %>%
-#     sf::st_transform(102300) %>%
-#     dplyr::mutate(lon= purrr::map_dbl(geometry, ~st_centroid(.x)[[1]]),
-#                   lat= purrr::map_dbl(geometry, ~st_centroid(.x)[[2]])) %>%
-#     dplyr::right_join(readr::read_csv("./analysis/data/derived_data/Mesonet/error/error_summer_2018.csv",
-#                                       col_types = readr::cols()) %>%
-#                         dplyr::filter(station != "lololowr")) %>%
-#     dplyr::filter(dataset == "prism", variable == "tmax")
-#
-#   ggplot2::ggplot() +
-#     geom_sf(data = mcor::mt_state, fill = 'gray40', alpha = 0.1) +
-#     add_hillshade() +
-#     geom_sf(data = dat, aes(color = Elevation), size = 3) +
-#     geom_label_repel(data = dat, aes(x = lon, y = lat, label = full_name)) +
-#     mdt_theme_map() +
-#     scale_color_distiller(palette = "Spectral",  direction = -1,
-#                           space = "Lab", name = "Elevation",
-#                           limit = c(500, 2500)) +
-#     geom_sf(data = dat, color = "black", pch = 21, size = 3) +
-#     labs(title = "Location and Elevation of Montana Mesonet Sites")
-# }
-#
+reference_map <- function() {
+
+  library(sf)
+  library(ggrepel)
+  source("./R/viz_map.R")
+
+  dat <- sf::read_sf("./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp") %>%
+    sf::st_transform(102300) %>%
+    dplyr::mutate(lon= purrr::map_dbl(geometry, ~st_centroid(.x)[[1]]),
+                  lat= purrr::map_dbl(geometry, ~st_centroid(.x)[[2]])) %>%
+    dplyr::right_join(readr::read_csv("./analysis/data/derived_data/Mesonet/error/error_summer_2018.csv",
+                                      col_types = readr::cols()) %>%
+                        dplyr::filter(station != "lololowr")) %>%
+    dplyr::filter(dataset == "prism", variable == "tmax")
+
+  ggplot2::ggplot() +
+    geom_sf(data = mcor::mt_state, fill = 'gray40', size = 1, alpha = 0.1) +
+    add_hillshade() +
+    geom_sf(data = dat, aes(color = Elevation), size = 3) +
+    geom_label_repel(data = dat, aes(x = lon, y = lat, label = full_name)) +
+    mdt_theme_map() +
+    scale_color_distiller(palette = "Oranges",  direction = 1,
+                          space = "Lab", name = "Elevation",
+                          limit = c(500, 2500)) +
+    geom_sf(data = dat, color = "black", pch = 21, size = 3)
+}
+
 # #### Function that shows errors in a map ####
 # error <- readr::read_csv("./analysis/data/derived_data/Mesonet/error/error_summer_2018.csv",
 #                          col_types = readr::cols()) %>%

@@ -3,7 +3,7 @@
 error_analysis <- function(year) {
 
   library(mcor)
-  source("./R/helpers.R")
+  source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/helpers.R")
 
   mes_sites <- sf::read_sf("./analysis/data/raw_data/shapefiles/all_mesonet_attributed.shp")
 
@@ -122,9 +122,14 @@ mae_analysis <- function(variable, year) {
                           lubridate::as_date("2018-07-29"),
                           by = "days")
 
-    dat <- "./analysis/data/derived_data/Mesonet/extracts/mes_grid_current.csv" %>%
-      readr::read_csv(col_types = readr::cols()) %>%
-      dplyr::filter(date %in% analysis_dates)
+    ppt_time <- c(seq(lubridate::as_date("2017-04-01"),
+                      lubridate::as_date("2017-10-01"),
+                      by = "days"),
+                  seq(lubridate::as_date("2018-04-01"),
+                      lubridate::as_date("2018-07-29"),
+                      by = "days"))
+
+    dat <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_current.csv"
 
   } else if (year == 2017) {
 
@@ -132,12 +137,17 @@ mae_analysis <- function(variable, year) {
                           lubridate::as_date("2017-12-31"),
                           by = "days")
 
-    dat <- "./analysis/data/derived_data/Mesonet/extracts/mes_grid_2017.csv" %>%
-      readr::read_csv(col_types = readr::cols()) %>%
-      dplyr::filter(date %in% analysis_dates)
+    ppt_time <- seq(lubridate::as_date("2017-04-01"),
+                    lubridate::as_date("2017-10-01"),
+                    by = "days")
+
+    dat <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_2017.csv"
   }
 
   dat %>%
+    readr::read_csv(col_types = readr::cols()) %>%
+    dplyr::filter(if (!!variable == "ppt") {date %in% ppt_time}
+                  else {date %in% analysis_dates}) %>%
     dplyr::filter(variable == !!variable,
                   dataset  != "mesonet_ceiling",
                   dataset  != "mesonet_floor") %>%
@@ -155,7 +165,6 @@ mae_analysis <- function(variable, year) {
     dplyr::mutate(mae_dataset = sum(abs_error)/dplyr::n())
 }
 
-
 plot_mae_analysis <- function(dat) {
 
   dat %>%
@@ -163,64 +172,122 @@ plot_mae_analysis <- function(dat) {
     geom_line(size = 1)
 }
 
-time_t_test <- function(variable, win) {
+time_t_test <- function(variable, year, win) {
 
-  dat_in <- mae_analysis(variable, 2018)
+  dat_in <- mae_analysis(variable, year) %>% dplyr::ungroup()
 
-  calc_t <- function(analysis_dates, dat) {
-
-    dat %>%
-      dplyr::filter(date %in% analysis_dates) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(dataset, mae_dataset) %>%
-      dplyr::distinct() %>%
-      split(.$dataset) %>%
-      {t.test(.[[1]]$mae_dataset, .[[2]]$mae_dataset)} %>%
-      {c(.$p.value, .$estimate[1], .$estimate[2])} %>%
-      unname()
-  }
-
-  date_list <- seq(lubridate::as_date("2017-05-01"),
-      lubridate::as_date("2018-05-01"),
-      by = "days")
-
-  test <- date_list %>%
+  date_in <- dat_in$date %>%
+    unique() %>%
     lapply(function(x) {seq(lubridate::as_date(x),
                             lubridate::as_date(x) + win,
                             by = "days")}) %>%
-    lapply(calc_t, dat = dat_in) %>%
-    do.call(rbind, .) %>%
-    tibble::as_tibble() %>%
-    magrittr::set_colnames(c("p_value", "mae_gridmet", "mae_prism")) %>%
-    tibble::add_column(date = date_list)
+    head(-win)
 
-}
+  calc_t <- function(analysis_dates, vec) {
 
-plot_t_test <- function(dat, stat) {
+    prepped <- dat_in %>%
+      dplyr::filter(date %in% analysis_dates) %>%
+      dplyr::filter(dataset == vec[1] | dataset == vec[2]) %>%
+      dplyr::select(dataset, mae_dataset) %>%
+      dplyr::distinct() %>%
+      split(.$dataset)
 
-  if(stat == "mean") {
+    t.test(prepped[[1]]$mae_dataset, prepped[[2]]$mae_dataset) %>%
+      {c(.$p.value, .$estimate[1], .$estimate[2])} %>%
+      unname() %>%
+      t() %>%
+      magrittr::set_colnames(c("pvalue", "mean1", "mean2")) %>%
+      tibble::as_tibble() %>%
+      tibble::add_column(datasets = paste(names(prepped), collapse = "-"))
+  }
 
-    dat %>%
-      dplyr::filter(pvalue != 0) %>%
-      ggplot2::ggplot() +
-        geom_line(aes(x = date, y = mae_prism, color = 'red'), size = 1) +
-        geom_line(aes(x = date, y = mae_gridmet, color = 'blue'), size = 1) +
-        scale_color_discrete(name = "Dataset", labels = c("Gridmet", "PRISM")) %>%
-      return()
+  calc_t_app <- function(vec) {
 
-  } else if (stat == "p") {
-
-    dat %>%
-      dplyr::filter(pvalue != 0) %>%
-      ggplot2::ggplot(aes(x = date, y = pvalue)) +
-        geom_line(color = 'black', size = 1) +
-        scale_color_discrete(name = "p-value", labels = 'p-value') %>%
-      return()
+    lapply(date_in, calc_t, vec = vec) %>%
+      dplyr::bind_rows()
 
   }
+
+  dat_out <- dat_in$dataset %>%
+    unique() %>%
+    utils::combn(2, simplify = FALSE) %>%
+    lapply(calc_t_app) %>%
+    lapply(function(x) {tibble::add_column(x, "date" = dat_in$date %>%
+                                             unique() %>%
+                                             head(-win))})
+
+  dat_out %>%
+    dplyr::bind_rows() %>%
+    tibble::add_column("uniques" = seq(1, length(dat_out)) %>%
+                                 lapply(function(x) rep(x, nrow(dat_out[[1]]))) %>%
+                                 unlist())
+
 }
 
+plot_t_test <- function(variable, year, win) {
+
+  source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/helpers.R")
+
+  mean_plot <- function(dat) {
+
+    dat %>%
+      ggplot2::ggplot() +
+      geom_line(aes(x = date, y = mean1, color = 'red'), size = 1) +
+      geom_line(aes(x = date, y = mean2, color = 'blue'), size = 1) +
+      labs(x = "", y = paste("MAE for Window of", win, "Days"),
+           title = paste("T-test Results of", variable, "MAE between\n",
+                         datasets_from_column(dat$datasets)[1], "and",
+                         datasets_from_column(dat$datasets)[2],
+                         "Relative to Montana Mesonet")
+           %>% stringr::str_to_title()) +
+      viz_mae() +
+      scale_color_discrete(name = "Dataset",
+                           labels = rev(datasets_from_column(dat$datasets)))
+  }
+
+  p_plot <- function(dat) {
+
+    dat %>%
+      ggplot2::ggplot() +
+        geom_line(aes(x = date, y = pvalue, color = 'black'), size = 1) +
+        scale_color_manual(name = "P-Value", labels = '', values = "black") +
+        ylab("P-value") +
+        xlab("Date") +
+        viz_mae()
+
+  }
+
+  make_agg_plot <- function(dat) {
+
+    cowplot::plot_grid(mean_plot(dat),
+                       p_plot(dat),
+                       ncol = 1,
+                       align = "v",
+                       axis = "l")
+
+  }
+
+  time_t_test(variable, year, win) %>%
+    split(.$datasets) %>%
+    lapply(make_agg_plot) %>%
+    magrittr::extract2(1)
+
+}
+
+viz_mae <- function() {
+
+  return(list(
+
+    theme_minimal(),
+
+    theme(plot.title = element_text(hjust = 0.5, colour = "gray15", face = "bold"),
+          plot.subtitle = element_text(hjust = 0.5, colour = "gray20", face = "bold"),
+          axis.title.x =  element_text(colour = "gray26", face = "bold"),
+          axis.title.y =  element_text(colour = "gray26", face = "bold"),
+          legend.title =  element_text(hjust = 0.5, colour="gray15", face = "bold",
+                                       size = 10),
+          legend.text =   element_text(colour="gray26", face = "bold", size = 10))
 
 
-
-
+  ))
+}
