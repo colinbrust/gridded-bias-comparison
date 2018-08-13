@@ -13,6 +13,7 @@ library(magrittr)
 library(dplyr)
 library(readr)
 library(kableExtra)
+library(gridExtra)
 source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/plot_mesonet.R")
 source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/error_analysis.R")
 
@@ -24,7 +25,7 @@ ui <- fluidPage(
 
   tabsetPanel(
     #### Box, Density and Correlation Plots ####
-    tabPanel("Box, Density, and Correlation Plots",
+    tabPanel("Mesonet-Gridded Comparison",
 
       # Sidebar with a slider input for number of bins
       sidebarLayout(
@@ -68,33 +69,35 @@ ui <- fluidPage(
 
     ),# end first tab panel
 
-    tabPanel("Mesonet-Gridded T-Test Results",
+     tabPanel("Mesonet-Gridded T-Test Results",
 
-       # Sidebar with a slider input for number of bins
-       sidebarLayout(
+      sidebarLayout(
 
-         sidebarPanel(
+        sidebarPanel(
 
-           selectInput("variable2", "Variable:",
-                       c("Maximum Temperature" = "tmax",
-                         "Minimum Temperature" = "tmin",
-                         "Precipitation" = "ppt")),
+          selectInput("variable2", "Variable:",
+                     c("Maximum Temperature" = "tmax",
+                       "Minimum Temperature" = "tmin",
+                       "Precipitation" = "ppt")),
 
-           radioButtons("year", "Year:",
-                        c("2017" = 2017,
-                          "2018" = 2018)),
+          radioButtons("year", "Year:",
+                       c("2017" = 2017,
+                         "2018" = 2018)),
 
-           sliderInput("win", "Window (# of Days)",
-                       min = 5, max = 50, value = 1)
-         ), # end sidebarPanel
+          selectInput("datasets", "Datasets to:", ""),
 
-         mainPanel(
-           plotOutput("errPlot")
-         ) #end mainPanel
+          numericInput("win", "Window (# of Days)", value = 10,
+                       min = 10, max = 50, step = 1)
 
-       ) #end sidebarLayout
+        ), # end sidebarPanel
 
-    )# end tabpanel
+        mainPanel(
+          plotOutput("errorPlot")
+        ) #end mainPanel
+
+      )
+
+     )# end tabpanel
 
   )# end tabsetpanel
 
@@ -114,6 +117,8 @@ dat_current <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/de
 
 error_current <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/error/error_current.csv" %>%
   readr::read_csv(col_types = readr::cols())
+
+
 
 #### server function ####
 server <- function(input, output, session) {
@@ -213,10 +218,49 @@ server <- function(input, output, session) {
                                   position = "center")
   }
 
-  output$errPlot <- function() {
+  observe({
 
-    plot_t_test(input$variable2, input$year, input$win)
-  }
+    if(input$year == 2017) {
+
+      if (input$variable2 == "ppt") {
+
+        updateSelectInput(session, "datasets",
+                          choices = list("CHIRPS vs Daymet" = "chirps-daymet",
+                                         "CHIRPS vs gridMet" = "chirps-gridmet",
+                                         "CHIRPS vs PRISM" = "chirps-prism",
+                                         "Daymet vs gridMet" = "daymet-gridmet",
+                                         "Daymet vs PRISM" = "daymet-prism",
+                                         "gridMet vs PRISM" = "gridmet-prism"))
+      } else {
+
+        updateSelectInput(session, "datasets",
+                          choices = list("Daymet vs gridMet" = "daymet-gridmet",
+                                         "Daymet vs PRISM" = "daymet-prism",
+                                         "gridMet vs PRISM" = "gridmet-prism"))
+      }
+
+    } else if (input$year == 2018) {
+
+      updateSelectInput(session, "datasets",
+                        choices = list("gridMet vs PRISM" = "gridmet-prism"))
+
+    }
+  })
+
+  output$errorPlot <- renderPlot({
+
+    out_dat <- plot_t_test(input$variable2, input$year, input$win)
+
+    out_index <- which(names(out_dat) == input$datasets)
+
+    gridExtra::grid.arrange(grobs = out_dat[[out_index]],
+                            ncol = 1,
+                            nrow = 2)
+
+
+
+
+  })
 
 
 }

@@ -122,13 +122,6 @@ mae_analysis <- function(variable, year) {
                           lubridate::as_date("2018-07-29"),
                           by = "days")
 
-    ppt_time <- c(seq(lubridate::as_date("2017-04-01"),
-                      lubridate::as_date("2017-10-01"),
-                      by = "days"),
-                  seq(lubridate::as_date("2018-04-01"),
-                      lubridate::as_date("2018-07-29"),
-                      by = "days"))
-
     dat <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_current.csv"
 
   } else if (year == 2017) {
@@ -137,17 +130,12 @@ mae_analysis <- function(variable, year) {
                           lubridate::as_date("2017-12-31"),
                           by = "days")
 
-    ppt_time <- seq(lubridate::as_date("2017-04-01"),
-                    lubridate::as_date("2017-10-01"),
-                    by = "days")
-
     dat <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/extracts/mes_grid_2017.csv"
   }
 
   dat %>%
     readr::read_csv(col_types = readr::cols()) %>%
-    dplyr::filter(if (!!variable == "ppt") {date %in% ppt_time}
-                  else {date %in% analysis_dates}) %>%
+    dplyr::filter(date %in% analysis_dates) %>%
     dplyr::filter(variable == !!variable,
                   dataset  != "mesonet_ceiling",
                   dataset  != "mesonet_floor") %>%
@@ -165,16 +153,10 @@ mae_analysis <- function(variable, year) {
     dplyr::mutate(mae_dataset = sum(abs_error)/dplyr::n())
 }
 
-plot_mae_analysis <- function(dat) {
-
-  dat %>%
-    ggplot2::ggplot(aes(x = date, y = mae_dataset, color = dataset)) +
-    geom_line(size = 1)
-}
-
 time_t_test <- function(variable, year, win) {
 
-  dat_in <- mae_analysis(variable, year) %>% dplyr::ungroup()
+  dat_in <- mae_analysis(variable, year) %>%
+    dplyr::ungroup()
 
   date_in <- dat_in$date %>%
     unique() %>%
@@ -199,6 +181,7 @@ time_t_test <- function(variable, year, win) {
       magrittr::set_colnames(c("pvalue", "mean1", "mean2")) %>%
       tibble::as_tibble() %>%
       tibble::add_column(datasets = paste(names(prepped), collapse = "-"))
+
   }
 
   calc_t_app <- function(vec) {
@@ -228,6 +211,8 @@ plot_t_test <- function(variable, year, win) {
 
   source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/helpers.R")
 
+  scaleFUN <- function(x) sprintf("%.2f", x)
+
   mean_plot <- function(dat) {
 
     dat %>%
@@ -242,7 +227,8 @@ plot_t_test <- function(variable, year, win) {
            %>% stringr::str_to_title()) +
       viz_mae() +
       scale_color_discrete(name = "Dataset",
-                           labels = rev(datasets_from_column(dat$datasets)))
+                           labels = rev(datasets_from_column(dat$datasets))) +
+      scale_y_continuous(labels = scaleFUN)
   }
 
   p_plot <- function(dat) {
@@ -250,27 +236,18 @@ plot_t_test <- function(variable, year, win) {
     dat %>%
       ggplot2::ggplot() +
         geom_line(aes(x = date, y = pvalue, color = 'black'), size = 1) +
-        scale_color_manual(name = "P-Value", labels = '', values = "black") +
         ylab("P-value") +
         xlab("Date") +
-        viz_mae()
-
-  }
-
-  make_agg_plot <- function(dat) {
-
-    cowplot::plot_grid(mean_plot(dat),
-                       p_plot(dat),
-                       ncol = 1,
-                       align = "v",
-                       axis = "l")
+        ylim(0, 1) +
+        geom_hline(yintercept = 0.1, linetype = "dashed", color = "red") +
+        viz_mae() +
+        scale_color_manual(name = "P-Value", labels = 'P-Value', values = "black")
 
   }
 
   time_t_test(variable, year, win) %>%
     split(.$datasets) %>%
-    lapply(make_agg_plot) %>%
-    magrittr::extract2(1)
+    lapply(function(x) list(mean_plot(x), p_plot(x)))
 
 }
 
@@ -287,7 +264,5 @@ viz_mae <- function() {
           legend.title =  element_text(hjust = 0.5, colour="gray15", face = "bold",
                                        size = 10),
           legend.text =   element_text(colour="gray26", face = "bold", size = 10))
-
-
   ))
 }
