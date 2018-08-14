@@ -84,10 +84,12 @@ ui <- fluidPage(
                        c("2017" = 2017,
                          "2018" = 2018)),
 
-          selectInput("datasets", "Datasets to:", ""),
+          selectInput("datasets", "Datasets to Compare:", ""),
 
           numericInput("win", "Window (# of Days)", value = 10,
-                       min = 10, max = 50, step = 1)
+                       min = 10, max = 50, step = 1),
+
+          actionButton("button", "Run T-Test (this will take a few seconds)")
 
         ), # end sidebarPanel
 
@@ -247,21 +249,23 @@ server <- function(input, output, session) {
     }
   })
 
+  error_plot_vals <- eventReactive(input$button, {
+    list(input$variable2, input$year, input$win, input$datasets)
+  })
+
   output$errorPlot <- renderPlot({
 
-    out_dat <- plot_t_test(input$variable2, input$year, input$win)
+    out_dat <- plot_t_test(error_plot_vals()[[1]],
+                           error_plot_vals()[[2]],
+                           error_plot_vals()[[3]])
 
-    out_index <- which(names(out_dat) == input$datasets)
+    out_index <- which(names(out_dat) == error_plot_vals()[[4]])
 
     gridExtra::grid.arrange(grobs = out_dat[[out_index]],
                             ncol = 1,
                             nrow = 2)
 
-
-
-
   })
-
 
 }
 
