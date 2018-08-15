@@ -117,7 +117,7 @@ dat_current <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/de
   readr::read_csv(col_types = readr::cols()) %>%
   dplyr::filter(date >= lubridate::as_date("2017-01-01"))
 
-error_current <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/error/error_current.csv" %>%
+error_current <- "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/analysis/data/derived_data/Mesonet/error/error_2018.csv" %>%
   readr::read_csv(col_types = readr::cols())
 
 
@@ -208,7 +208,8 @@ server <- function(input, output, session) {
     use_err %>%
       dplyr::filter(variable == input$variable,
                     station == input$station) %>%
-      dplyr::select(-variable, -station) %>%
+      dplyr::select(-variable, -station, -Landform,
+                    -Aspect, -Slope, -full_name, -Elevation) %>%
       magrittr::set_colnames(c("Dataset",
                                "Mean Absolute Error",
                                "Pearson's R",

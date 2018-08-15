@@ -34,6 +34,7 @@ make_den_plots <- function(variable, time, stat, dev, ...) {
     feather::read_feather() %>%
     dplyr::filter(Montana == "yes") %>%
     dplyr::filter(Dataset != "Ensemble") %>%
+    dplyr::mutate(EnsDiff = EnsDiff*-1) %>%
     dplyr::filter_(...) %>%
     factor_data(time) %>%
     ggplot2::ggplot(aes(x = !!Value,  color = Dataset)) +

@@ -30,6 +30,7 @@ make_boxplots <- function(variable, time, stat, dev, ...) {
     feather::read_feather() %>%
     dplyr::filter(Montana == "yes") %>%
     dplyr::filter(Dataset != "Ensemble") %>%
+    dplyr::mutate(EnsDiff = EnsDiff*-1) %>%
     dplyr::filter_(...) %>%
     factor_data(time) %>%
     ggplot(aes(x = Index, y = !!Value, fill = Dataset)) +

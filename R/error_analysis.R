@@ -16,7 +16,7 @@ error_analysis <- function(year) {
 
   if(year == 2018) {
 
-    analysis_dates <- seq(lubridate::as_date("2018-04-01"),
+    analysis_dates <- seq(lubridate::as_date("2017-01-01"),
                           lubridate::as_date("2018-07-29"),
                           by = "days")
 
@@ -30,13 +30,13 @@ error_analysis <- function(year) {
 
   } else if (year == 2017) {
 
-    analysis_dates <- seq(lubridate::as_date("2017-04-01"),
-                          lubridate::as_date("2017-07-29"),
+    analysis_dates <- seq(lubridate::as_date("2017-01-01"),
+                          lubridate::as_date("2017-12-31"),
                           by = "days")
 
     stations <- stations_2017()[[1]]
 
-    full_names <- stations_2018()[[2]]
+    full_names <- stations_2017()[[2]]
 
     dat <- "./analysis/data/derived_data/Mesonet/extracts/mes_grid_2017.csv" %>%
       readr::read_csv(col_types = readr::cols()) %>%
@@ -82,7 +82,7 @@ error_analysis <- function(year) {
                      median_bias_fl = median(floor_diff, na.rm = T),
                      median_bias_ce = median(ceiling_diff, na.rm = T))
 
-  out_name <- paste0("./analysis/data/derived_data/Mesonet/error/error_summer_", year, ".csv")
+  out_name <- paste0("./analysis/data/derived_data/Mesonet/error/error_", year, ".csv")
 
   dplyr::bind_rows(
     temp_error,
