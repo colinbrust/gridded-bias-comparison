@@ -166,6 +166,20 @@ server <- function(input, output, session) {
                                         "Sidney ARC" = "sidneymt"))
     }
 
+    if (input$type == "cumsum_plot") {
+
+      updateSelectInput(session, "variable",
+                        choices = list("Precipitation" = "ppt"))
+
+    } else {
+
+      updateSelectInput(session, "variable",
+                        choices = list("Maximum Temperature" = "tmax",
+                                       "Minimum Temperature" = "tmin",
+                                       "Precipitation" = "ppt"))
+    }
+
+
   })
 
 

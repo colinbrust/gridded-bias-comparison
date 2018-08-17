@@ -171,9 +171,9 @@ cumsum_plot <- function(dat_source,
                       station_filter,
                       agg_type) {
 
-  analysis_months <- seq(4, 6)
-
   organize_data(dat_source, variable, station_filter, agg_type) %>%
+    dplyr::filter(lubridate::month(date) >= 4 &
+                  lubridate::month(date) <= 10) %>%
     dplyr::group_by(dataset, variable, station) %>%
     dplyr::mutate(cs = cumsum(value)) %>%
     dplyr::ungroup() %>%
