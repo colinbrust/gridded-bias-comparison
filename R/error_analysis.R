@@ -211,6 +211,8 @@ plot_t_test <- function(variable, year, win) {
 
   source("Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/R/helpers.R")
 
+
+  # taken from stack exchange question
   scaleFUN <- function(x) sprintf("%.2f", x)
 
   mean_plot <- function(dat) {
