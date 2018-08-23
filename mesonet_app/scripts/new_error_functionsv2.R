@@ -1,14 +1,15 @@
 
 calc_mae_bias <- function(variable) {
 
-  "./data/new_error_analysis.csv" %>%
+  #"./data/new_error_analysis.csv" %>%
+    "Y:/Projects/MCO_Gridded_Met_Eval/GriddedPackage/mesonet_app/data/new_error_analysis.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(date <= lubridate::as_date("2018-07-25"), # for some reason mesonet data is missing on the 26th of July
                   variable == !!variable) %>%
     dplyr::mutate(mes_value = dplyr::if_else(dataset == "gridmet",
                                                 floor_value,
                                                 ceiling_value)) %>%
-    dplyr::filter(!is.na(mes_value)) %>%
+    #dplyr::filter(!is.na(mes_value)) %>%
     dplyr::mutate(abs_error = abs(value - mes_value),
                   bias = value - mes_value) %>%
     dplyr::select(station, date, dataset,
@@ -172,6 +173,43 @@ error_test <- function(analysis_dates, dat, test, metric) {
 
 }
 
+anova_test <- function(dataset1, dataset2, metric, variable) {
+
+  valids <- calc_mae_bias(variable) %>%
+    dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
+    dplyr::filter(!is.na(bias)) %>%
+    dplyr::select(station, date, dataset) %>%
+    split(.$dataset) %>%
+    lapply(function(x) dplyr::select(x, -dataset)) %>%
+    {dplyr::intersect(.[[1]], .[[2]])}
+
+  calc_mae_bias(variable) %>%
+    dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
+    dplyr::filter(!is.na(bias)) %>%
+    split(.$dataset) %>%
+    lapply(function(x) dplyr::left_join(valids, x, by = c("station", "date"))) %>%
+    dplyr::bind_rows() %>%
+
+
+
+  metric <-  rlang::sym(metric)
+
+  test <- dat %>%
+    dplyr::select(station, date, dataset, variable, med_bias, med_abs) %>%
+    dplyr::rename("bias" = med_bias, "abs_error" = med_abs) %>%
+    dplyr::arrange(dataset, date) %>%
+    dplyr::mutate(dataset = factor(dataset))
+
+
+  res.aov <- aov(metric ~ dataset, data = test)
+
+    dplyr::group_by(dataset) %>%
+    dplyr::summarise(count = dplyr::n(),
+                     mean = mean(!!metric, na.rm = TRUE),
+                     sd = sd(!!metric, na.rm = TRUE))
+
+}
+
 med_calc <- function(analysis_dates, dat, metric) {
 
   dat %>%
@@ -210,3 +248,6 @@ viz_mae <- function() {
           legend.text =   element_text(colour="gray26", face = "bold", size = 10))
   ))
 }
+
+test1$date[352]
+test2$date[352]
