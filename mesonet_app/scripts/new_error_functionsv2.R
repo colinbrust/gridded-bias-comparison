@@ -1,12 +1,10 @@
 
 calc_mae_bias <- function(variable) {
 
-  "./analysis/data/derived_data/Mesonet/extracts/new_error_analysis.csv" %>%
+  "./data/new_error_analysis.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(date <= lubridate::as_date("2018-07-25"), # for some reason mesonet data is missing on the 26th of July
-                  variable == !!variable,
-                  dataset != "mesonet_ceiling",
-                  dataset != "mesonet_floor") %>%
+                  variable == !!variable) %>%
     dplyr::mutate(mes_value = dplyr::if_else(dataset == "gridmet",
                                                 floor_value,
                                                 ceiling_value)) %>%
@@ -74,6 +72,29 @@ plot_bias <- function(dat) {
     scale_y_continuous(labels = scaleFUN)
 }
 
+bias_box <- function(dat, test) {
+
+  dat_split <- split(dat, dat$dataset)
+
+  test_fun <- switch(test,
+                     "t"=match.fun("t.test"),
+                     "ks"=match.fun("ks.test"),
+                     "mw"=match.fun("wilcox.test"))
+
+  p_result <- dat %>%
+    split(.$dataset) %>%
+    {test_fun(.[[1]]$med_bias, .[[2]]$med_bias)} %>%
+    {.$p.value}
+
+
+  dat %>%
+    ggplot(aes(x = dataset, y = med_bias)) +
+      geom_boxplot() +
+      labs(y = "Median Bias", x = "Dataset",
+           subtitle = paste("P-Value of ", p_result, "Across Entire Timeseries")) +
+      viz_mae()
+}
+
 plot_abs  <- function(dat) {
 
   library(ggplot2)
@@ -81,11 +102,35 @@ plot_abs  <- function(dat) {
   ggplot(dat, aes(x = date, y = med_abs, color = dataset)) +
     geom_line(size = 1) +
     geom_ribbon(aes(ymin = abs25, ymax = abs75), linetype = 1, alpha = 0.2) +
-    labs(y = "Median Absolute Error", x  = "Date") +
+    labs(y = "Median Absolute Error", x = "Date") +
     viz_mae() +
     scale_y_continuous(labels = scaleFUN)
 
 }
+
+abs_box <- function(dat, test) {
+
+  library(ggplot2)
+
+  test_fun <- switch(test,
+                     "t"=match.fun("t.test"),
+                     "ks"=match.fun("ks.test"),
+                     "mw"=match.fun("wilcox.test"))
+
+  p_result <- dat %>%
+    split(.$dataset) %>%
+    {test_fun(.[[1]]$med_abs, .[[2]]$med_abs)} %>%
+    {.$p.value}
+
+
+  dat %>%
+    ggplot(aes(x = dataset, y = med_abs)) +
+    geom_boxplot() +
+    labs(y = "Median Absolute Error", x = "Dataset",
+         subtitle = paste("P-Value of ", p_result, "Across Entire Timeseries")) +
+    viz_mae()
+}
+
 
 plot_test <- function(dat) {
 
@@ -102,6 +147,7 @@ plot_test <- function(dat) {
 }
 
 
+
 #### Helper functions ####
 lowest_date <- function(dat) {
 
@@ -116,7 +162,7 @@ error_test <- function(analysis_dates, dat, test, metric) {
   test_fun <- switch(test,
                      "t"=match.fun("t.test"),
                      "ks"=match.fun("ks.test"),
-                     "mww"=match.fun("wilcox.test"))
+                     "mw"=match.fun("wilcox.test"))
 
   dat %>%
     lapply(function(x) dplyr::filter(x, date %in% analysis_dates)) %>%
