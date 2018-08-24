@@ -17,6 +17,7 @@ library(gridExtra)
 source("./scripts/plot_mesonet.R")
 source("./scripts/new_error_functionsv2.R")
 source("./scripts/error_analysis.R")
+source("./scripts/ppt_analysis.R")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -84,46 +85,6 @@ ui <- fluidPage(
       ) # end sidebar layout
     ), # end first tab panel
 
-
-    #### T-Tests (initial) ####
-    # tabPanel(
-    #   "Mesonet-Gridded T-Test Results",
-    #
-    #   sidebarLayout(
-    #     sidebarPanel(
-    #       selectInput(
-    #         "variable2", "Variable:",
-    #         c(
-    #           "Maximum Temperature" = "tmax",
-    #           "Minimum Temperature" = "tmin",
-    #           "Precipitation" = "ppt"
-    #         )
-    #       ),
-    #
-    #       radioButtons(
-    #         "year", "Year:",
-    #         c(
-    #           "2017" = 2017,
-    #           "2018" = 2018
-    #         )
-    #       ),
-    #
-    #       selectInput("datasets", "Datasets to Compare:", ""),
-    #
-    #       numericInput("win", "Window (# of Days)",
-    #         value = 10,
-    #         min = 10, max = 50, step = 1
-    #       ),
-    #
-    #       actionButton("button", "Run T-Test (this will take a few seconds)")
-    #     ), # end sidebarPanel
-    #
-    #     mainPanel(
-    #       plotOutput("errorPlot")
-    #     ) # end mainPanel
-    #   )
-    # ),# end tabpanel
-    #### Temperature T-Tests ####
     tabPanel(
       "Temperature T-Test Results",
 
@@ -148,14 +109,6 @@ ui <- fluidPage(
           selectInput("dataset2", "Second Dataset to Compare", ""),
 
           radioButtons(
-            "metric", "Error Metric to Test:",
-            c(
-              "Bias" = "bias",
-              "Absolute Error" = "abs_error"
-            )
-          ),
-
-          radioButtons(
             "test", "Test Type:",
             c(
               "T-Test" = "t",
@@ -167,6 +120,14 @@ ui <- fluidPage(
           numericInput("win", "Window (# of Days)",
                        value = 1,
                        min = 1, max = 50, step = 1
+          ),
+
+          dateRangeInput("dateRange",
+                         label = "Date Range:",
+                         start = lubridate::as_date("2017-01-01"),
+                         end = lubridate::as_date("2018-01-01"),
+                         min = lubridate::as_date("2017-01-01"),
+                         max = lubridate::as_date("2018-07-20")
           ),
 
           actionButton("button1", "Run Test (this will take a few seconds)")
@@ -185,14 +146,14 @@ ui <- fluidPage(
       sidebarLayout(
         sidebarPanel(
 
-          selectInput("datasetsPpt", "Datasets to Compare:", ""),
+          radioButtons("ppt_plot", "Plot Type:",
+                       c("Density Plot" = "den",
+                         "Empirical Cumulative Distribution Function" = "ecdf")),
 
-          numericInput("winPpt", "Window (# of Days)",
-                       value = 10,
-                       min = 10, max = 50, step = 1
-          ),
+          radioButtons("ppt_tf", "Use Days Mesonet Recorded Precip?",
+                       c("True" = TRUE,
+                         "False" = FALSE))
 
-          actionButton("buttonPpt", "Run T-Test (this will take a few seconds)")
         ), # end sidebarPanel
 
         mainPanel(
@@ -356,89 +317,45 @@ server <- function(input, output, session) {
       session, "dataset2",
       choices = items[which(dataset_check != input$dataset1)]
     )
+
+
   })
 
   error_plot_vals <- eventReactive(input$button1, {
-    list(input$dataset1, input$dataset2, input$metric,
-         input$test, input$variable2, input$win)
+    list(input$dataset1, input$dataset2,input$test,
+         input$variable2, input$win, input$dateRange)
   })
 
   output$ttesttmp <- renderPlot({
 
     dat <- significance_test(
-      error_plot_vals()[[1]], error_plot_vals()[[2]], error_plot_vals()[[3]],
-      error_plot_vals()[[4]], error_plot_vals()[[5]], error_plot_vals()[[6]]
-      )
+      error_plot_vals()[[1]], error_plot_vals()[[2]],
+      error_plot_vals()[[3]], error_plot_vals()[[4]], error_plot_vals()[[5]]
+      ) %>%
+      dplyr::filter(date >= error_plot_vals()[[6]][1] & date <= error_plot_vals()[[6]][2])
 
 
+    lay <- rbind(c(1,1,2),
+                 c(3,3,4))
 
     gridExtra::grid.arrange(
       grobs = list(plot_bias(dat),
-                   bias_box(dat, error_plot_vals()[[4]]),
+                   bias_box(dat, error_plot_vals()[[3]]),
                    plot_abs(dat),
-                   abs_box(dat, error_plot_vals()[[4]])),
+                   abs_box(dat, error_plot_vals()[[3]])),
+
+      layout_matrix = lay,
       ncol = 2,
       nrow = 2
     )
 
-    # gridExtra::grid.arrange(
-    #   grobs = list(plot_bias(dat),
-    #                plot_abs(dat),
-    #                plot_test(dat)),
-    #   ncol = 1,
-    #   nrow = 3
-    # )
-
-
   }, height = 800, width = 1050)
-  # observe({
-  #   if (input$year == 2017) {
-  #     if (input$variable2 == "ppt") {
-  #       updateSelectInput(session, "datasets",
-  #         choices = list(
-  #           "CHIRPS vs Daymet" = "chirps-daymet",
-  #           "CHIRPS vs gridMet" = "chirps-gridmet",
-  #           "CHIRPS vs PRISM" = "chirps-prism",
-  #           "Daymet vs gridMet" = "daymet-gridmet",
-  #           "Daymet vs PRISM" = "daymet-prism",
-  #           "gridMet vs PRISM" = "gridmet-prism"
-  #         )
-  #       )
-  #     } else {
-  #       updateSelectInput(session, "datasets",
-  #         choices = list(
-  #           "Daymet vs gridMet" = "daymet-gridmet",
-  #           "Daymet vs PRISM" = "daymet-prism",
-  #           "gridMet vs PRISM" = "gridmet-prism"
-  #         )
-  #       )
-  #     }
-  #   } else if (input$year == 2018) {
-  #     updateSelectInput(session, "datasets",
-  #       choices = list("gridMet vs PRISM" = "gridmet-prism")
-  #     )
-  #   }
-  # })
-  #
-  # error_plot_vals <- eventReactive(input$button, {
-  #   list(input$variable2, input$year, input$win, input$datasets)
-  # })
-  #
-  # output$errorPlot <- renderPlot({
-  #   out_dat <- plot_t_test(
-  #     error_plot_vals()[[1]],
-  #     error_plot_vals()[[2]],
-  #     error_plot_vals()[[3]]
-  #   )
-  #
-  #   out_index <- which(names(out_dat) == error_plot_vals()[[4]])
-  #
-  #   gridExtra::grid.arrange(
-  #     grobs = out_dat[[out_index]],
-  #     ncol = 1,
-  #     nrow = 2
-  #   )
-  # })
+
+  output$ttestppt <- renderPlot({
+
+    ppt_den_plot(input$ppt_tf, input$ppt_plot)
+  })
+
 }
 
 # Run the application

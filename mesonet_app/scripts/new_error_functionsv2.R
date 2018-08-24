@@ -9,7 +9,6 @@ calc_mae_bias <- function(variable) {
     dplyr::mutate(mes_value = dplyr::if_else(dataset == "gridmet",
                                                 floor_value,
                                                 ceiling_value)) %>%
-    #dplyr::filter(!is.na(mes_value)) %>%
     dplyr::mutate(abs_error = abs(value - mes_value),
                   bias = value - mes_value) %>%
     dplyr::select(station, date, dataset,
@@ -17,14 +16,15 @@ calc_mae_bias <- function(variable) {
 }
 
 # metric = bias, abs_error
-significance_test <- function(dataset1, dataset2, metric,
+significance_test <- function(dataset1, dataset2,
                               test, variable, win = 1) {
 
   library(magrittr)
 
   dat <- calc_mae_bias(variable) %>%
-    dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
-    dplyr::filter(date <= lowest_date(.)) %>%
+    dplyr::filter(dataset == dataset1 | dataset == dataset2,
+                  date <= lowest_date(.),
+                  !is.na(bias)) %>%
     split(.$dataset)
 
   dates_use <- dat[[1]]$date %>%
@@ -34,20 +34,19 @@ significance_test <- function(dataset1, dataset2, metric,
                             by = "days")}) %>%
     head(-win)
 
-  error_out <- dates_use %>%
-    lapply(error_test, dat = dat, test = test, metric = metric) %>%
-    unlist() %>%
-    tibble::tibble(test_result = ., date = dat[[1]]$date %>%
-                                  unique() %>%
-                                  head(-win))
+  # error_out <- dates_use %>%
+  #   lapply(error_test, dat = dat, test = test, metric = metric) %>%
+  #   unlist() %>%
+  #   tibble::tibble(test_result = ., date = dat[[1]]$date %>%
+  #                                 unique() %>%
+  #                                 head(-win))
 
   meds_out <- dates_use %>%
-    lapply(med_calc, dat = dat, metric = metric) %>%
+    lapply(med_calc, dat = dat) %>%
     dplyr::bind_rows()
 
   dplyr::left_join(dplyr::bind_rows(dat),
-                   error_out, by = "date") %>%
-    dplyr::left_join(meds_out, by = c("date", "dataset", "variable", "station"))
+                   meds_out, by = c("date", "dataset", "variable", "station"))
 
 
 }
@@ -65,7 +64,6 @@ plot_bias <- function(dat) {
     dplyr::distinct()
 
   ggplot(dat1, aes(x = date, y = med_bias, color = dataset)) +
-    # geom_line(data = dat,  aes(x = date, y = station_bias, color = station), size = 0.5) +
     geom_line(size = 1) +
     geom_ribbon(aes(ymin = bias25, ymax = bias75), linetype = 1, alpha = 0.2) +
     labs(y = "Median Bias", x = "Date") +
@@ -92,7 +90,8 @@ bias_box <- function(dat, test) {
     ggplot(aes(x = dataset, y = med_bias)) +
       geom_boxplot() +
       labs(y = "Median Bias", x = "Dataset",
-           subtitle = paste("P-Value of ", p_result, "Across Entire Timeseries")) +
+           subtitle = paste("P-Value of ", formatC(p_result, format = "e", digits = 3),
+                            "Across Entire Timeseries")) +
       viz_mae()
 }
 
@@ -128,7 +127,8 @@ abs_box <- function(dat, test) {
     ggplot(aes(x = dataset, y = med_abs)) +
     geom_boxplot() +
     labs(y = "Median Absolute Error", x = "Dataset",
-         subtitle = paste("P-Value of ", p_result, "Across Entire Timeseries")) +
+         subtitle = paste("P-Value of ", formatC(p_result, format = "e", digits = 3),
+                          "Across Entire Timeseries")) +
     viz_mae()
 }
 
@@ -173,44 +173,41 @@ error_test <- function(analysis_dates, dat, test, metric) {
 
 }
 
-anova_test <- function(dataset1, dataset2, metric, variable) {
+# anova_test <- function(dataset1, dataset2, metric, variable) {
+#
+#   valids <- calc_mae_bias(variable) %>%
+#     dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
+#     dplyr::filter(!is.na(bias)) %>%
+#     dplyr::select(station, date, dataset) %>%
+#     split(.$dataset) %>%
+#     lapply(function(x) dplyr::select(x, -dataset)) %>%
+#     {dplyr::intersect(.[[1]], .[[2]])}
+#
+#   metric <- rlang::sym(metric)
+#
+#   dat <- calc_mae_bias(variable) %>%
+#     dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
+#     dplyr::filter(!is.na(bias)) %>%
+#     dplyr::group_by(date, dataset) %>%
+#     dplyr::mutate(med = median(!!metric)) %>%
+#     split(.$dataset) %>%
+#     lapply(function(x) dplyr::left_join(valids, x, by = c("station", "date"))) %>%
+#     dplyr::bind_rows() %>%
+#     dplyr::rename("err_use" = !!metric) %>%
+#     dplyr::arrange(dataset, date, station) %>%
+#     dplyr::mutate(dataset = factor(dataset)) %>%
+#     dplyr::filter(date >= lubridate::as_date("2017-04-01") &
+#                   date <= lubridate::as_date("2018-01-01"))
+#
+#
+#   ggplot(dat, aes(x = date, y = med, color = dataset)) +
+#     geom_line(size = 1)
+#
+#   res.aov <- aov(med ~ dataset, data = dat)
+#
+# }
 
-  valids <- calc_mae_bias(variable) %>%
-    dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
-    dplyr::filter(!is.na(bias)) %>%
-    dplyr::select(station, date, dataset) %>%
-    split(.$dataset) %>%
-    lapply(function(x) dplyr::select(x, -dataset)) %>%
-    {dplyr::intersect(.[[1]], .[[2]])}
-
-  calc_mae_bias(variable) %>%
-    dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
-    dplyr::filter(!is.na(bias)) %>%
-    split(.$dataset) %>%
-    lapply(function(x) dplyr::left_join(valids, x, by = c("station", "date"))) %>%
-    dplyr::bind_rows() %>%
-
-
-
-  metric <-  rlang::sym(metric)
-
-  test <- dat %>%
-    dplyr::select(station, date, dataset, variable, med_bias, med_abs) %>%
-    dplyr::rename("bias" = med_bias, "abs_error" = med_abs) %>%
-    dplyr::arrange(dataset, date) %>%
-    dplyr::mutate(dataset = factor(dataset))
-
-
-  res.aov <- aov(metric ~ dataset, data = test)
-
-    dplyr::group_by(dataset) %>%
-    dplyr::summarise(count = dplyr::n(),
-                     mean = mean(!!metric, na.rm = TRUE),
-                     sd = sd(!!metric, na.rm = TRUE))
-
-}
-
-med_calc <- function(analysis_dates, dat, metric) {
+med_calc <- function(analysis_dates, dat) {
 
   dat %>%
     dplyr::bind_rows() %>%
@@ -248,6 +245,3 @@ viz_mae <- function() {
           legend.text =   element_text(colour="gray26", face = "bold", size = 10))
   ))
 }
-
-test1$date[352]
-test2$date[352]
