@@ -34,13 +34,6 @@ significance_test <- function(dataset1, dataset2,
                             by = "days")}) %>%
     head(-win)
 
-  # error_out <- dates_use %>%
-  #   lapply(error_test, dat = dat, test = test, metric = metric) %>%
-  #   unlist() %>%
-  #   tibble::tibble(test_result = ., date = dat[[1]]$date %>%
-  #                                 unique() %>%
-  #                                 head(-win))
-
   meds_out <- dates_use %>%
     lapply(med_calc, dat = dat) %>%
     dplyr::bind_rows()
@@ -66,7 +59,7 @@ plot_bias <- function(dat) {
   ggplot(dat1, aes(x = date, y = med_bias, color = dataset)) +
     geom_line(size = 1) +
     geom_ribbon(aes(ymin = bias25, ymax = bias75), linetype = 1, alpha = 0.2) +
-    labs(y = "Median Bias", x = "Date") +
+    labs(y = "Bias (C)", x = "Date", color = "Dataset") +
     viz_mae() +
     scale_y_continuous(labels = scaleFUN)
 }
@@ -87,12 +80,19 @@ bias_box <- function(dat, test) {
 
 
   dat %>%
-    ggplot(aes(x = dataset, y = med_bias)) +
-      geom_boxplot() +
-      labs(y = "Median Bias", x = "Dataset",
+    dplyr::group_by(dataset) %>%
+    dplyr::summarise(med_bias = median(bias),
+                     bias5 = quantile(bias, .05),
+                     bias95 = quantile(bias, .95)) %>%
+    ggplot(aes(x = dataset, y = med_bias, color = dataset)) +
+      geom_errorbar(aes(ymin = bias5, ymax = bias95), width = 0.3) +
+      geom_point(size = 2) +
+      labs(y = "Bias (C)", x = "Dataset",
+           title = "Median, 5th, and 95th Percentile of\nBias Across Timeseries",
            subtitle = paste("P-Value of ", formatC(p_result, format = "e", digits = 3),
-                            "Across Entire Timeseries")) +
-      viz_mae()
+                            "Between Datasets")) +
+      viz_mae() +
+      theme(legend.position = "none")
 }
 
 plot_abs  <- function(dat) {
@@ -102,7 +102,7 @@ plot_abs  <- function(dat) {
   ggplot(dat, aes(x = date, y = med_abs, color = dataset)) +
     geom_line(size = 1) +
     geom_ribbon(aes(ymin = abs25, ymax = abs75), linetype = 1, alpha = 0.2) +
-    labs(y = "Median Absolute Error", x = "Date") +
+    labs(y = "Absolute Error (C)", x = "Date", color = "Dataset") +
     viz_mae() +
     scale_y_continuous(labels = scaleFUN)
 
@@ -124,12 +124,19 @@ abs_box <- function(dat, test) {
 
 
   dat %>%
-    ggplot(aes(x = dataset, y = med_abs)) +
-    geom_boxplot() +
-    labs(y = "Median Absolute Error", x = "Dataset",
-         subtitle = paste("P-Value of ", formatC(p_result, format = "e", digits = 3),
-                          "Across Entire Timeseries")) +
-    viz_mae()
+    dplyr::group_by(dataset) %>%
+    dplyr::summarise(med_abs = median(abs_error),
+                     abs5 = quantile(abs_error, .05),
+                     abs95 = quantile(abs_error, .95)) %>%
+    ggplot(aes(x = dataset, y = med_abs, color = dataset)) +
+      geom_errorbar(aes(ymin = abs5, ymax = abs95), width = 0.3) +
+      geom_point(size = 2) +
+      labs(y = "Absolute Error (C)", x = "Dataset",
+           title = "Median, 5th, and 95th Percentile of\nAbsolute Error Across Timeseries",
+           subtitle = paste("P-Value of ", formatC(p_result, format = "e", digits = 3),
+                            "Between Datasets")) +
+      viz_mae() +
+      theme(legend.position = "none")
 }
 
 
@@ -173,40 +180,6 @@ error_test <- function(analysis_dates, dat, test, metric) {
 
 }
 
-# anova_test <- function(dataset1, dataset2, metric, variable) {
-#
-#   valids <- calc_mae_bias(variable) %>%
-#     dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
-#     dplyr::filter(!is.na(bias)) %>%
-#     dplyr::select(station, date, dataset) %>%
-#     split(.$dataset) %>%
-#     lapply(function(x) dplyr::select(x, -dataset)) %>%
-#     {dplyr::intersect(.[[1]], .[[2]])}
-#
-#   metric <- rlang::sym(metric)
-#
-#   dat <- calc_mae_bias(variable) %>%
-#     dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
-#     dplyr::filter(!is.na(bias)) %>%
-#     dplyr::group_by(date, dataset) %>%
-#     dplyr::mutate(med = median(!!metric)) %>%
-#     split(.$dataset) %>%
-#     lapply(function(x) dplyr::left_join(valids, x, by = c("station", "date"))) %>%
-#     dplyr::bind_rows() %>%
-#     dplyr::rename("err_use" = !!metric) %>%
-#     dplyr::arrange(dataset, date, station) %>%
-#     dplyr::mutate(dataset = factor(dataset)) %>%
-#     dplyr::filter(date >= lubridate::as_date("2017-04-01") &
-#                   date <= lubridate::as_date("2018-01-01"))
-#
-#
-#   ggplot(dat, aes(x = date, y = med, color = dataset)) +
-#     geom_line(size = 1)
-#
-#   res.aov <- aov(med ~ dataset, data = dat)
-#
-# }
-
 med_calc <- function(analysis_dates, dat) {
 
   dat %>%
@@ -245,3 +218,37 @@ viz_mae <- function() {
           legend.text =   element_text(colour="gray26", face = "bold", size = 10))
   ))
 }
+
+# anova_test <- function(dataset1, dataset2, metric, variable) {
+#
+#   valids <- calc_mae_bias(variable) %>%
+#     dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
+#     dplyr::filter(!is.na(bias)) %>%
+#     dplyr::select(station, date, dataset) %>%
+#     split(.$dataset) %>%
+#     lapply(function(x) dplyr::select(x, -dataset)) %>%
+#     {dplyr::intersect(.[[1]], .[[2]])}
+#
+#   metric <- rlang::sym(metric)
+#
+#   dat <- calc_mae_bias(variable) %>%
+#     dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
+#     dplyr::filter(!is.na(bias)) %>%
+#     dplyr::group_by(date, dataset) %>%
+#     dplyr::mutate(med = median(!!metric)) %>%
+#     split(.$dataset) %>%
+#     lapply(function(x) dplyr::left_join(valids, x, by = c("station", "date"))) %>%
+#     dplyr::bind_rows() %>%
+#     dplyr::rename("err_use" = !!metric) %>%
+#     dplyr::arrange(dataset, date, station) %>%
+#     dplyr::mutate(dataset = factor(dataset)) %>%
+#     dplyr::filter(date >= lubridate::as_date("2017-04-01") &
+#                   date <= lubridate::as_date("2018-01-01"))
+#
+#
+#   ggplot(dat, aes(x = date, y = med, color = dataset)) +
+#     geom_line(size = 1)
+#
+#   res.aov <- aov(med ~ dataset, data = dat)
+#
+# }

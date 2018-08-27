@@ -14,6 +14,7 @@ library(dplyr)
 library(readr)
 library(kableExtra)
 library(gridExtra)
+library(shinyjs)
 source("./scripts/plot_mesonet.R")
 source("./scripts/new_error_functionsv2.R")
 source("./scripts/error_analysis.R")
@@ -21,6 +22,7 @@ source("./scripts/ppt_analysis.R")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+  shinyjs::useShinyjs(),
 
   # Application title
   titlePanel("Comparison of Gridded Data and Mesonet Data"),
@@ -86,7 +88,7 @@ ui <- fluidPage(
     ), # end first tab panel
 
     tabPanel(
-      "Temperature T-Test Results",
+      "Temperature Error Analysis",
 
       sidebarLayout(
         sidebarPanel(
@@ -104,7 +106,8 @@ ui <- fluidPage(
               "Daymet" = "daymet",
               "gridMet" = "gridmet",
               "PRISM" = "prism"
-            )),
+            )
+          ),
 
           selectInput("dataset2", "Second Dataset to Compare", ""),
 
@@ -118,16 +121,16 @@ ui <- fluidPage(
           ),
 
           numericInput("win", "Window (# of Days)",
-                       value = 1,
-                       min = 1, max = 50, step = 1
+            value = 1,
+            min = 1, max = 50, step = 1
           ),
 
           dateRangeInput("dateRange",
-                         label = "Date Range:",
-                         start = lubridate::as_date("2017-01-01"),
-                         end = lubridate::as_date("2018-01-01"),
-                         min = lubridate::as_date("2017-01-01"),
-                         max = lubridate::as_date("2018-07-20")
+            label = "Date Range:",
+            start = lubridate::as_date("2017-01-01"),
+            end = lubridate::as_date("2018-01-01"),
+            min = lubridate::as_date("2017-01-01"),
+            max = lubridate::as_date("2018-07-20")
           ),
 
           actionButton("button1", "Run Test (this will take a few seconds)")
@@ -141,23 +144,46 @@ ui <- fluidPage(
 
     #### Precip T-Test ####
     tabPanel(
-      "Precip T-Test Results",
+      "Precip Error Analysis",
 
       sidebarLayout(
         sidebarPanel(
+          checkboxInput("ppt_tf", "Use Days Mesonet Recorded Precip?", FALSE),
 
-          radioButtons("ppt_plot", "Plot Type:",
-                       c("Density Plot" = "den",
-                         "Empirical Cumulative Distribution Function" = "ecdf")),
+          radioButtons(
+            "ppt_plot", "Plot Type:",
+            c(
+              "Density Plot" = "den",
+              "Empirical Cumulative Distribution Function" = "ecdf",
+              "Time Series" = "time",
+              "Correct Precip Prediction" = "bin"
+            )
+          ),
 
-          radioButtons("ppt_tf", "Use Days Mesonet Recorded Precip?",
-                       c("True" = TRUE,
-                         "False" = FALSE))
+          selectInput(
+            "dataset3", "First Dataset to Compare",
+            c(
+              "Daymet" = "daymet",
+              "gridMet" = "gridmet",
+              "PRISM" = "prism",
+              "CHIRPS" = "chirps"
+            )
+          ),
 
+          selectInput("dataset4", "Second Dataset to Compare", ""),
+
+          radioButtons(
+            "test2", "Test Type:",
+            c(
+              "T-Test" = "t",
+              "Kolmogorov-Smirnov Test" = "ks",
+              "Mann-Whitney Test" = "mw"
+            )
+          )
         ), # end sidebarPanel
 
         mainPanel(
-          plotOutput("ttestppt")
+          plotOutput("ppt")
         ) # end mainPanel
       ) # end sidebarLayout
     ) # end tabPanel
@@ -179,10 +205,10 @@ dat_current <- "./data/mes_grid_current.csv" %>%
 error_current <- "./data/error_2018.csv" %>%
   readr::read_csv(col_types = readr::cols())
 
-
-
 #### server function ####
 server <- function(input, output, session) {
+
+  #### Make Comparison Plots ####
   observe({
     if (input$current) {
       updateSelectInput(session, "station",
@@ -305,57 +331,122 @@ server <- function(input, output, session) {
       )
   }
 
+  #### Make PPT Error Plots ####
+
   observe({
+    items <- list(
+      "Daymet" = "daymet",
+      "gridMet" = "gridmet",
+      "PRISM" = "prism",
+      "CHIRPS" = "chirps"
+    )
 
-    items = list("Daymet" = "daymet",
-                 "gridMet" = "gridmet",
-                 "PRISM" = "prism")
+    dataset_check <- list("daymet", "gridmet", "prism", "chirps")
 
-    dataset_check = list("daymet", "gridmet", "prism")
+    updateSelectInput(
+      session, "dataset4",
+      choices = items[which(dataset_check != input$dataset3)]
+    )
+  })
+
+  output$ppt <- renderPlot({
+    if (input$ppt_plot == "time") {
+      lay <- rbind(
+        c(1, 1, 2),
+        c(3, 3, 4)
+      )
+
+      gridExtra::grid.arrange(
+        grobs = list(
+          bias_time_plot(input$dataset3, input$dataset4),
+          ppt_boxes(input$dataset3, input$dataset4,
+            type = "bias", test = input$test2
+          ),
+          mae_time_plot(input$dataset3, input$dataset4),
+          ppt_boxes(input$dataset3, input$dataset4,
+            type = "ab", test = input$test2
+          )
+        ),
+        layout_matrix = lay,
+        ncol = 2,
+        nrow = 2
+      )
+    } else if (input$ppt_plot == "bin") {
+      binary_plot()
+    } else {
+      ppt_den_plot(input$ppt_tf, input$ppt_plot)
+    }
+  }, height = 800, width = 1050)
+
+  observeEvent(input$ppt_plot, {
+    if (input$ppt_plot == "time" | input$ppt_plot == "bin") {
+      shinyjs::disable("ppt_tf")
+    } else {
+      shinyjs::enable("ppt_tf")
+    }
+
+    if (input$ppt_plot == "time") {
+      shinyjs::enable("dataset3")
+      shinyjs::enable("dataset4")
+      shinyjs::enable("test2")
+    } else {
+      shinyjs::disable("dataset3")
+      shinyjs::disable("dataset4")
+      shinyjs::disable("test2")
+    }
+  })
+
+  #### Make Temp Error Plots ####
+
+  observe({
+    items <- list(
+      "Daymet" = "daymet",
+      "gridMet" = "gridmet",
+      "PRISM" = "prism"
+    )
+
+    dataset_check <- list("daymet", "gridmet", "prism")
 
     updateSelectInput(
       session, "dataset2",
       choices = items[which(dataset_check != input$dataset1)]
     )
-
-
   })
 
+
   error_plot_vals <- eventReactive(input$button1, {
-    list(input$dataset1, input$dataset2,input$test,
-         input$variable2, input$win, input$dateRange)
+    list(
+      input$dataset1, input$dataset2, input$test,
+      input$variable2, input$win, input$dateRange
+    )
   })
 
   output$ttesttmp <- renderPlot({
-
     dat <- significance_test(
       error_plot_vals()[[1]], error_plot_vals()[[2]],
       error_plot_vals()[[3]], error_plot_vals()[[4]], error_plot_vals()[[5]]
-      ) %>%
+    ) %>%
       dplyr::filter(date >= error_plot_vals()[[6]][1] & date <= error_plot_vals()[[6]][2])
 
 
-    lay <- rbind(c(1,1,2),
-                 c(3,3,4))
+    lay <- rbind(
+      c(1, 1, 2),
+      c(3, 3, 4)
+    )
 
     gridExtra::grid.arrange(
-      grobs = list(plot_bias(dat),
-                   bias_box(dat, error_plot_vals()[[3]]),
-                   plot_abs(dat),
-                   abs_box(dat, error_plot_vals()[[3]])),
+      grobs = list(
+        plot_bias(dat),
+        bias_box(dat, error_plot_vals()[[3]]),
+        plot_abs(dat),
+        abs_box(dat, error_plot_vals()[[3]])
+      ),
 
       layout_matrix = lay,
       ncol = 2,
       nrow = 2
     )
-
   }, height = 800, width = 1050)
-
-  output$ttestppt <- renderPlot({
-
-    ppt_den_plot(input$ppt_tf, input$ppt_plot)
-  })
-
 }
 
 # Run the application
