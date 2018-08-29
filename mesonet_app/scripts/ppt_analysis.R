@@ -198,3 +198,9 @@ calc_mae <- function(dat) {
     dplyr::ungroup()
 
 }
+
+## temperature density plot
+
+
+## x axis precip, y axis bias
+## same with temperature - daily temperature range
