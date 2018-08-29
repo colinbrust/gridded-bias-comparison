@@ -154,7 +154,6 @@ ui <- fluidPage(
             "ppt_plot", "Plot Type:",
             c(
               "Density Plot" = "den",
-              "Empirical Cumulative Distribution Function" = "ecdf",
               "Time Series" = "time",
               "Correct Precip Prediction" = "bin"
             )
@@ -374,7 +373,7 @@ server <- function(input, output, session) {
     } else if (input$ppt_plot == "bin") {
       binary_plot()
     } else {
-      ppt_den_plot(input$ppt_tf, input$ppt_plot)
+      ppt_den_plot(input$ppt_tf)
     }
   }, height = 800, width = 1050)
 
@@ -395,6 +394,9 @@ server <- function(input, output, session) {
       shinyjs::disable("test2")
     }
   })
+  
+  #### Make PPT Plotly Plots ####
+  
 
   #### Make Temp Error Plots ####
 
