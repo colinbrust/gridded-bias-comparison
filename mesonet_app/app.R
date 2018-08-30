@@ -185,7 +185,28 @@ ui <- fluidPage(
           plotOutput("ppt")
         ) # end mainPanel
       ) # end sidebarLayout
-    ) # end tabPanel
+    ), # end tabPanel
+
+    tabPanel(
+      "Interactive Error Plots",
+
+      sidebarLayout(
+        sidebarPanel(
+          radioButtons(
+            "variable3", "Variable:",
+            c(
+              "Maximum Temperature" = "tmax",
+              "Minimum Temperature" = "tmin"
+            )
+          )
+
+        ), # end sidebarPanel
+
+        mainPanel(
+          plotly::plotlyOutput("intPlt")
+        ) # end mainPanel
+      ) # end sidebarLayout
+    )
   ) # end tabsetpanel
 ) # end fluidpage
 
@@ -394,9 +415,9 @@ server <- function(input, output, session) {
       shinyjs::disable("test2")
     }
   })
-  
+
   #### Make PPT Plotly Plots ####
-  
+
 
   #### Make Temp Error Plots ####
 
@@ -449,6 +470,13 @@ server <- function(input, output, session) {
       nrow = 2
     )
   }, height = 800, width = 1050)
+
+  #### Interactive Plots ####
+
+  output$intPlt <- plotly::renderPlotly({
+    plotly::plot_ly(daily_range_plot(input$variable3)) %>%
+      layout(boxmode = "group")
+  })
 }
 
 # Run the application

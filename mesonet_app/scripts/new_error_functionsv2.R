@@ -1,7 +1,6 @@
 
 calc_mae_bias <- function(variable) {
-
-  "./data/new_error_analysis.csv" %>%
+  "./mesonet_app/data/new_error_analysis.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(
       date <= lubridate::as_date("2018-07-25"), # for some reason mesonet data is missing on the 26th of July
@@ -168,45 +167,87 @@ abs_box <- function(dat, test) {
 }
 
 daily_range_plot <- function(variable) {
+
+  library(ggplot2)
+
   myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD")
   names(myColors) <- c("prism", "daymet", "gridmet", "chirps")
 
-  calc_temp_range() %>%
-    dplyr::filter(
-      !is.na(range),
-      variable == !!variable,
-      dataset != "mesonet_floor" &
-        dataset != "mesonet_ceiling"
-    ) %>%
-    dplyr::mutate(mes_value = dplyr::if_else(
-      dataset == "gridmet",
-      floor_value,
-      ceiling_value
-    )) %>%
-    dplyr::mutate(
-      abs_error = abs(value - mes_value),
-      bias = value - mes_value
-    ) %>%
-    dplyr::select(station, date, dataset, range, abs_error, bias) %>%
-    dplyr::filter(!is.na(bias)) %>%
-    dplyr::group_by(dataset) %>%
-    dplyr::mutate(binned = dplyr::ntile(range, 50)) %>%
+  "./mesonet_app/data/error_analysis_range.csv" %>%
+    readr::read_csv(col_types = readr::cols()) %>%
+    dplyr::filter(variable == !!variable) %>%
+    dplyr::mutate(binned = dplyr::ntile(mes_range, 50)) %>%
+    dplyr::group_by(binned) %>%
+    dplyr::mutate(mes_range = mean(mes_range)) %>%
     dplyr::ungroup() %>%
-    dplyr::group_by(dataset, binned) %>%
-    dplyr::summarise(
-      range = mean(range),
-      bias = mean(bias),
-      abs = mean(abs_error)
-    ) %>%
-    ggplot(aes(x = range, y = bias, color = dataset)) +
-      geom_line(size = 0.5) +
+    ggplot(aes(x = mes_range, y = bias, group = interaction(mes_range, dataset),
+               fill = dataset)) +
+      geom_boxplot(outlier.size = 0.5) +
       viz_mae() +
       scale_color_manual(values = myColors) +
       labs(
         x = "Daily Temperature Range (C)", y = "Dataset Bias (C)",
         color = "Dataset",
         title = paste("Mesonet Temperature Range vs Gridded", variable, "Bias (C)")
+      ) +
+    ylim(-20, 20)
+}
+
+temp_range_bias <- function() {
+
+  "./mesonet_app/data/error_analysis_range.csv" %>%
+    readr::read_csv(col_types = readr::cols()) %>%
+    dplyr::select(station, date, dataset, mes_range, range) %>%
+    dplyr::filter(dataset != "chirps") %>%
+    dplyr:: distinct() %>%
+    dplyr::mutate(range_bias = range - mes_range) %>%
+    dplyr::mutate(binned = dplyr::ntile(mes_range, 50)) %>%
+    dplyr::group_by(binned, dataset) %>%
+    dplyr::summarise(rrange = mean(mes_range, na.rm = T),
+                     brange = mean(range_bias, na.rm = T),
+                     q25 = quantile(range_bias, 0.25, na.rm = T),
+                     q75 = quantile(range_bias, 0.75, na.rm = T)) %>%
+    ggplot(aes(x = rrange, y = brange, color = dataset)) +
+      geom_line(size = 1) +
+      geom_ribbon(aes(ymin = q25, ymax = q75), alpha = .2, linetype = 2) +
+      viz_mae() +
+      scale_color_manual(values = myColors) +
+      labs(
+        x = "Mesonet Temperature Range (C)", y = "Dataset Temperature Range Bias (C)",
+        color = "Dataset Median\nand IQR",
+        title = paste("Mesonet Temperature Range vs Gridded Temperature Range Bias")
       )
+
+}
+
+real_vs_bias <- function(variable) {
+
+  myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD")
+  names(myColors) <- c("prism", "daymet", "gridmet", "chirps")
+
+  "./mesonet_app/data/error_analysis_range.csv" %>%
+    readr::read_csv(col_types = readr::cols()) %>%
+    dplyr::filter(variable == !!variable,
+                  date < lubridate::as_date("2018-01-01")) %>%
+    dplyr::mutate(binned = dplyr::ntile(mes_value, 30)) %>%
+    dplyr::group_by(dataset, binned) %>%
+    dplyr::summarise(mes = mean(mes_value),
+                     grd = median(bias),
+                     q25 = quantile(bias, 0.25),
+                     q75 = quantile(bias, 0.75)) %>%
+    ggplot(aes(x = mes, y = grd, color = dataset)) +
+      geom_line(size = 1) +
+      geom_ribbon(aes(ymin = q25, ymax = q75),
+                  alpha = 0.15, linetype = 2, size = .5) +
+      viz_mae() +
+      scale_color_manual(values = myColors) +
+      labs(
+        x = paste("Mesonet", variable, "(C)"),
+        y = "Dataset Bias (C)",
+        color = "Dataset Median\nand IQR",
+        title = paste("Mesonet", variable, "vs Gridded", variable, "Bias (C)")
+      )
+
 }
 
 
@@ -293,8 +334,11 @@ viz_mae <- function() {
   ))
 }
 
+
+#### Ignore these functions ####
+
 calc_temp_range <- function() {
-  dat <- "./data/new_error_analysis.csv" %>%
+  dat <- "./mesonet_app/data/error_analysis_fixed.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(
       date <= lubridate::as_date("2018-07-25"), # for some reason mesonet data is missing on the 26th of July
@@ -309,7 +353,7 @@ calc_temp_range <- function() {
     dplyr::select(-tmax, -tmin)
 
 
-  "./data/new_error_analysis.csv" %>%
+  "./mesonet_app/data/new_error_analysis.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::mutate(method = dplyr::if_else(
       dataset == "gridmet",
@@ -319,36 +363,61 @@ calc_temp_range <- function() {
     dplyr::left_join(dat, by = c("station", "date", "method"))
 }
 
-# anova_test <- function(dataset1, dataset2, metric, variable) {
-#
-#   valids <- calc_mae_bias(variable) %>%
-#     dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
-#     dplyr::filter(!is.na(bias)) %>%
-#     dplyr::select(station, date, dataset) %>%
-#     split(.$dataset) %>%
-#     lapply(function(x) dplyr::select(x, -dataset)) %>%
-#     {dplyr::intersect(.[[1]], .[[2]])}
-#
-#   metric <- rlang::sym(metric)
-#
-#   dat <- calc_mae_bias(variable) %>%
-#     dplyr::filter(dataset == dataset1 | dataset == dataset2) %>%
-#     dplyr::filter(!is.na(bias)) %>%
-#     dplyr::group_by(date, dataset) %>%
-#     dplyr::mutate(med = median(!!metric)) %>%
-#     split(.$dataset) %>%
-#     lapply(function(x) dplyr::left_join(valids, x, by = c("station", "date"))) %>%
-#     dplyr::bind_rows() %>%
-#     dplyr::rename("err_use" = !!metric) %>%
-#     dplyr::arrange(dataset, date, station) %>%
-#     dplyr::mutate(dataset = factor(dataset)) %>%
-#     dplyr::filter(date >= lubridate::as_date("2017-04-01") &
-#                   date <= lubridate::as_date("2018-01-01"))
-#
-#
-#   ggplot(dat, aes(x = date, y = med, color = dataset)) +
-#     geom_line(size = 1)
-#
-#   res.aov <- aov(med ~ dataset, data = dat)
-#
-# }
+#calc_all_range() %>% readr::write_csv("./mesonet_app/data/error_analysis_range.csv")
+
+calc_all_range <- function() {
+
+  dat <- "./mesonet_app/data/error_analysis_fixed.csv" %>%
+    readr::read_csv(col_types = readr::cols()) %>%
+    dplyr::filter(variable == "tmax" | variable == "tmin") %>%
+    dplyr::select(-floor_value, -ceiling_value, -floor_diff, -ceiling_diff) %>%
+    split(.$dataset) %>%
+    lapply(function(x) split_merge_dat(x)) %>%
+    dplyr::bind_rows() %>%
+    dplyr::mutate(range = tmax - tmin) %>%
+    dplyr::select(-tmax, -tmin)
+
+  mes_vals <- dat %>%
+    dplyr::filter(dataset == "mesonet_floor" | dataset == "mesonet_ceiling") %>%
+    tidyr::spread(dataset, range) %>%
+    dplyr::rename(ceiling_range = mesonet_ceiling,
+                  floor_range = mesonet_floor)
+
+  "./mesonet_app/data/error_analysis_fixed.csv" %>%
+    readr::read_csv(col_types = readr::cols()) %>%
+    dplyr::full_join(mes_vals, by = c("station", "date")) %>%
+    dplyr::mutate(
+      mes_value = dplyr::if_else(
+        dataset == "gridmet",
+        floor_value,
+        ceiling_value
+      ),
+      bias = dplyr::if_else(
+        dataset == "gridmet",
+        floor_diff,
+        ceiling_diff
+      ),
+      mes_range = dplyr::if_else(
+        dataset == "gridmet",
+        floor_range,
+        ceiling_range
+      )
+    ) %>%
+    dplyr::select(-dplyr::starts_with("floor"), -dplyr::starts_with("ceiling")) %>%
+    dplyr::filter(!is.na(mes_value)) %>%
+    dplyr::left_join(dat, by = c("station", "date", "dataset")) %>%
+    dplyr::distinct() %>%
+    dplyr::filter(dataset != "mesonet_ceiling", dataset != "mesonet_floor")
+}
+
+split_merge_dat <- function(dat) {
+  dat %>%
+    dplyr::mutate(unq = dplyr::row_number()) %>%
+    split(.$variable) %>%
+    lapply(function(x) tidyr::spread(x, variable, value)) %>%
+    lapply(function(x) dplyr::select(x, -unq)) %>%
+    {
+      dplyr::full_join(.[[1]], .[[2]], by = c("station", "date", "dataset"))
+    }
+}
+

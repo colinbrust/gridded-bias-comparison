@@ -1,7 +1,7 @@
 library(magrittr)
 
 arrange_ppt_data <- function() {
-  "./data/new_error_analysis.csv" %>%
+  "./mesonet_app/data/new_error_analysis.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(
       date <= lubridate::as_date("2018-07-25"), # for some reason mesonet data is missing on the 26th of July
@@ -140,6 +140,8 @@ mae_time_plot <- function(dataset1, dataset2) {
 }
 
 intensity_plot <- function() {
+
+  library(ggplot2)
 
   # this is a logged sequence of values to (hopefully) capture the whole
   # range of variability in precip
