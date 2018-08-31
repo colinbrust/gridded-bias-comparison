@@ -474,8 +474,7 @@ server <- function(input, output, session) {
   #### Interactive Plots ####
 
   output$intPlt <- plotly::renderPlotly({
-    plotly::plot_ly(daily_range_plot(input$variable3)) %>%
-      layout(boxmode = "group")
+    daily_range_points(input$variable3)
   })
 }
 

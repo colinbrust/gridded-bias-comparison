@@ -1,7 +1,7 @@
 library(magrittr)
 
 arrange_ppt_data <- function() {
-  "./mesonet_app/data/new_error_analysis.csv" %>%
+  "./data/new_error_analysis.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(
       date <= lubridate::as_date("2018-07-25"), # for some reason mesonet data is missing on the 26th of July

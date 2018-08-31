@@ -1,6 +1,6 @@
 
 calc_mae_bias <- function(variable) {
-  "./mesonet_app/data/new_error_analysis.csv" %>%
+  "./data/new_error_analysis.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(
       date <= lubridate::as_date("2018-07-25"), # for some reason mesonet data is missing on the 26th of July
@@ -173,29 +173,66 @@ daily_range_plot <- function(variable) {
   myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD")
   names(myColors) <- c("prism", "daymet", "gridmet", "chirps")
 
-  "./mesonet_app/data/error_analysis_range.csv" %>%
+  "./data/error_analysis_range.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(variable == !!variable) %>%
     dplyr::mutate(binned = dplyr::ntile(mes_range, 50)) %>%
-    dplyr::group_by(binned) %>%
-    dplyr::mutate(mes_range = mean(mes_range)) %>%
+    dplyr::group_by(binned, dataset) %>%
+    dplyr::summarise(mes_range = mean(mes_range),
+                     new_bias  = median(bias),
+                     q25       = quantile(bias, 0.25),
+                     q75       = quantile(bias, 0.75)) %>%
     dplyr::ungroup() %>%
-    ggplot(aes(x = mes_range, y = bias, group = interaction(mes_range, dataset),
-               fill = dataset)) +
-      geom_boxplot(outlier.size = 0.5) +
+    ggplot(aes(x = mes_range, y = new_bias, color = dataset)) +
+      geom_line(size = 1) +
+      geom_ribbon(aes(ymin = q25, ymax = q75), alpha = 0.2, linetype = 2) +
       viz_mae() +
       scale_color_manual(values = myColors) +
       labs(
         x = "Daily Temperature Range (C)", y = "Dataset Bias (C)",
         color = "Dataset",
         title = paste("Mesonet Temperature Range vs Gridded", variable, "Bias (C)")
-      ) +
-    ylim(-20, 20)
+      )
+
+  # ggplot(aes(x = mes_range, y = bias, group = interaction(mes_range, dataset),
+  #            fill = dataset)) +
+  #   geom_boxplot(outlier.size = 0.5) +
+  #   viz_mae() +
+  #   scale_color_manual(values = myColors) +
+  #   labs(
+  #     x = "Daily Temperature Range (C)", y = "Dataset Bias (C)",
+  #     color = "Dataset",
+  #     title = paste("Mesonet Temperature Range vs Gridded", variable, "Bias (C)")
+  #   ) +
+  #   ylim(-20, 20)
+}
+
+daily_range_points <- function(variable) {
+
+  myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD")
+  names(myColors) <- c("prism", "daymet", "gridmet", "chirps")
+
+  "./mesonet_app/data/error_analysis_range.csv" %>%
+    readr::read_csv(col_types = readr::cols()) %>%
+    dplyr::filter(variable == !!variable) %>%
+    dplyr::group_by(dataset, date) %>%
+    dplyr::summarise(range = mean(mes_range),
+                     bias = mean(bias)) %>%
+    ggplot(aes(x = range, y = bias, color = dataset, label = date)) +
+      geom_point() +
+      stat_smooth() +
+      viz_mae() +
+      scale_color_manual(values = myColors) +
+      labs(
+        x = "Daily Temperature Range (C)", y = "Dataset Bias (C)",
+        color = "Dataset",
+        title = paste("Mesonet Temperature Range vs Gridded", variable, "Bias (C)")
+      )
 }
 
 temp_range_bias <- function() {
 
-  "./mesonet_app/data/error_analysis_range.csv" %>%
+  "./data/error_analysis_range.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::select(station, date, dataset, mes_range, range) %>%
     dplyr::filter(dataset != "chirps") %>%
@@ -225,7 +262,7 @@ real_vs_bias <- function(variable) {
   myColors <- c("#E9724C", "#6d976d", "#255F85", "#F9DBBD")
   names(myColors) <- c("prism", "daymet", "gridmet", "chirps")
 
-  "./mesonet_app/data/error_analysis_range.csv" %>%
+  "./data/error_analysis_range.csv" %>%
     readr::read_csv(col_types = readr::cols()) %>%
     dplyr::filter(variable == !!variable,
                   date < lubridate::as_date("2018-01-01")) %>%
