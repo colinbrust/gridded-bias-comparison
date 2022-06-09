@@ -1,0 +1,19 @@
+---
+title: "Assessment of Gridded Meteorological Products in Montana"
+author: "Colin Brust"
+format: html
+---
+
+## What are Gridded Meteorological Products?
+
+- overview
+
+## What products are we using
+
+- gridmet, prism, daymet: give specifications.
+
+## Montana Mesonet
+
+- asdf
+
+## Results.
