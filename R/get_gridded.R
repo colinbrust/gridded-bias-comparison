@@ -17,10 +17,12 @@ get_mesonet_shp <- function() {
 
 
 clean_extraction <- function(dat) {
+
   dat %>% 
     tidyr::pivot_longer(-station) %>%
     tidyr::separate(name, c("date", "product", "element"), "_") %>% 
     dplyr::mutate(date = lubridate::as_date(date, format = "X%Y%m%d"))
+
 }
 
 get_gridded_data <- function(feature_coll, variable) {
@@ -54,8 +56,6 @@ get_gridded_data <- function(feature_coll, variable) {
     'tmin' = 'tmin'
   )
   
-  print(paste(coll, feature_coll, v, variable))
-  
   ee$ImageCollection(coll) %>%
     ee$ImageCollection$filterDate("2016-01-01", "2022-06-01") %>%
     ee$ImageCollection$map(
@@ -71,9 +71,9 @@ get_gridded_data <- function(feature_coll, variable) {
       scale = resolution,
       sf = F,
       via = "drive",
-      container = "GEE_Exports"
-    ) %>% 
-    clean_extraction()
+      container = "GEE_Exports",
+      quiet = TRUE
+    ) 
 }
 
 extract_all_data <- function(dirname="./data-raw") {
@@ -88,13 +88,15 @@ extract_all_data <- function(dirname="./data-raw") {
         'prism' = c("ppt", "tmax", "tmin")
       )
       
-      purrr::map(vs, function(y) get_gridded_data(x, y)) %>%
-        dplyr::bind_rows()
-      
-    }) %>% 
-    dplyr::bind_rows() %>% 
-    readr::write_csv(file.path(dirname, 'raw_gridded.csv'))
+      purrr::map(vs, function(y) {
+        print(glue::glue("Working on {x}_{y}.csv..."))
+        
+        get_gridded_data(x, y) %>% 
+          readr::write_csv(file.path(dirname, glue::glue("{x}_{y}.csv")))
+      } )
+
+    }) 
 }
 
-# launch_ee()
-# extract_all_data("~/projects/mco/gridded-bias-comparison/data-raw")
+launch_ee()
+extract_all_data("~/projects/mco/gridded-bias-comparison/data-raw")

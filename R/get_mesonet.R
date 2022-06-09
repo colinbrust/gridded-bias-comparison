@@ -12,27 +12,37 @@ get_mesonet_raw <- function(dirname) {
   )
   
 
-  dplyr::tbl(con, RPostgres::Id(schema = "data", table = "observations")) %>%
-    dplyr::filter(element == 'ppt' |
-                    element == 'air_temp_0200' | element == 'air_temp_0244') %>%
-    dplyr::collect() %>%
-    readr::write_csv(file.path(dirname, "raw_mesonet.csv"))
+  dplyr::tbl(con, RPostgres::Id(schema = "data", table = "l1")) %>%
+    dplyr::filter(element %in%  c('ppt','air_temp_0200', 'air_temp_0244', 'ppt_max_rate')) %>%
+    dplyr::collect() %>% 
+    readr::write_csv(a, file.path(dirname, "raw_mesonet.csv"))
   
 }
 
 raw_to_daily <- function(f) {
-  readr::read_csv(f) %>%
+  
+  dat <- readr::read_csv(f, show_col_types = FALSE) %>%
     dplyr::mutate(element = dplyr::case_when(
       stringr::str_detect(element, '_temp_') ~ 'air_temp',
       TRUE ~ element
-    )) %>%
-    dplyr::filter(!is.na(value)) %>%
-    tidyr::pivot_wider(names_from = element, values_from = value) %>%
+    )) %>% 
+    dplyr::distinct() %>% 
+    tidyr::pivot_wider(names_from = element, values_from = value) 
+  
+  
+  dat %>% 
+    dplyr::mutate(
+      ppt = dplyr::case_when(
+        is.na(ppt_max_rate) ~ NaN,
+        ppt > 5 ~ NaN,
+        TRUE ~ ppt
+      )
+    ) %>% 
+    dplyr::select(-ppt_max_rate) %>% 
     dplyr::group_by(station, date = lubridate::date(datetime)) %>%
     dplyr::summarise(
       tmax = max(air_temp, na.rm = T),
       tmin = min(air_temp, na.rm = T),
-      tmean = mean(air_temp, na.rm = T),
       ppt = sum(ppt, na.rm = T)
     ) %>%
     dplyr::arrange(station, date) %>%
