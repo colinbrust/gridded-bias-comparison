@@ -6,13 +6,14 @@ join_datasets <- function(
     mesonet_f = "./data-raw/daily_mesonet.csv"
 ) {
   
-  mesonet_data <- readr::read_csv(gridded_f, show_col_types = FALSE)
-  gridded_data <- readr::read_csv(mesonet_f, show_col_types = FALSE) %>% 
+  mesonet_data <- readr::read_csv(mesonet_f, show_col_types = FALSE) %>% 
     tidyr::pivot_longer(
       c("tmax", "tmin", "ppt"), 
       names_to = "element", 
       values_to = "mesonet_value"
-    )
+    ) 
+  
+  gridded_data <- readr::read_csv(gridded_f, show_col_types = FALSE) 
   
   dplyr::left_join(mesonet_data, gridded_data, by = c("station", "date", "element")) %>% 
     dplyr::filter(
@@ -25,6 +26,7 @@ rmse <- function(x, x_hat)  sqrt(mean((x - x_hat) ^ 2))
 r2 <- function (x, x_hat) cor(x, x_hat) ^ 2
 mse <- function(x, x_hat)  mean((x - x_hat) ^ 2)
 bias <- function(x, x_hat) mean(x - x_hat)
+mae <- function(x, x_hat) mean(abs(x - x_hat))
 
 calc_error <- function(joined, period='annual', station=FALSE) {
   
@@ -41,7 +43,7 @@ calc_error <- function(joined, period='annual', station=FALSE) {
       month = month.name[month],
       month = factor(month, levels = month.name)
     ) %>% 
-    dplyr::filter(!(element == 'ppt' & season != "Summer")) %>%
+    # dplyr::filter(!(element == 'ppt' & season != "Summer")) %>%
     {
       if (station) {
         dplyr::group_by(., product, element, !!rlang::sym(period), station)
@@ -54,6 +56,7 @@ calc_error <- function(joined, period='annual', station=FALSE) {
       r2 = r2(mesonet_value, gridded_value),
       mse = mse(mesonet_value, gridded_value),
       bias = bias(mesonet_value, gridded_value),
+      mae = mae(mesonet_value, gridded_value),
       .groups = 'drop'
     ) %>%
     dplyr::mutate(
@@ -72,7 +75,7 @@ calc_error <- function(joined, period='annual', station=FALSE) {
     ) 
 }
 
-plot_summary <- function(joined, period, stat='rmse') {
+plot_bar <- function(joined, period, stat='rmse') {
   
   stat_lab = switch(
     stat,
@@ -94,7 +97,7 @@ plot_summary <- function(joined, period, stat='rmse') {
   )
   
   calc_error(joined, period, FALSE) %>% 
-    dplyr::select(product, element, time=period, value=stat) %>% 
+    dplyr::select(product, element, time=dplyr::all_of(period), value=dplyr::all_of(stat)) %>% 
     ggplot(aes(x=time, y=value, fill=product)) + 
       geom_bar(stat='identity', position='dodge') + 
       geom_hline(aes(yintercept=0)) + 
@@ -110,11 +113,42 @@ plot_summary <- function(joined, period, stat='rmse') {
       theme_bw()
 }
 
-stations <- readr::read_csv("https://mesonet.climate.umt.edu/api/v2/stations/?type=csv", 
-                show_col_types = FALSE) %>%
-  dplyr::select(station, name, longitude, latitude) 
-
-joined <- join_datasets()
+plot_box <- function(joined, period, stat='rmse') {
+  
+  stat_lab = switch(
+    stat,
+    'rmse' = 'RMSE',
+    'bias' = 'Mean Bias',
+    'mse' = 'MSE',
+    'r2' = 'R-Squared'
+  )
+  
+  period_lab = switch(
+    period, 
+    'month' = 'Monthly',
+    'season' = 'Seasonal',
+    'annual' = 'Annual'
+  )
+  
+  title = glue::glue(
+    "{period_lab} {stat_lab} for All Mesonet Stations"
+  )
+  
+  calc_error(joined, period, TRUE) %>% 
+    dplyr::select(station, product, element, time=dplyr::all_of(period), value=dplyr::all_of(stat)) %>% 
+    ggplot(aes(x=time, y=value, fill=product)) + 
+      geom_boxplot() +
+    facet_wrap(~element, nrow=3, scales='free_y') + 
+    scale_fill_manual(
+      values = c(
+        "Daymet" = "#1b9e77",
+        "gridMET" = "#d95f02",
+        "PRISM" = "#7570b3"
+      )
+    ) +
+    labs(x='', y='', fill = '', title = title) + 
+    theme_bw()
+}
 
 
 plot_map <- function(joined, stations, stat='rmse', element='tmin') {
@@ -138,10 +172,43 @@ plot_map <- function(joined, stations, stat='rmse', element='tmin') {
     sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
   
   ggplot() + 
-    geom_sf(mapping = aes(color = r2), data = dat) + 
+    geom_sf(mapping = aes(color = rmse), data = dat) + 
     geom_sf(mapping = aes(), data = mt, fill = NA) + 
     scale_color_distiller(type='div') + 
     facet_wrap(~product, nrow=3) + 
     theme_minimal()
     
 }
+
+calc_ttest <- function(joined, element='ppt') {
+  
+  e_swap = switch(
+    element,
+    'ppt' = 'Precipitation (mm)',
+    'tmax' = 'Max. Temperature (deg C)',
+    'tmin' = 'Min. Temperature (deg C)'
+  )
+  
+  vals <- calc_error(joined, 'annual', TRUE) %>% 
+    dplyr::select(product, element, station, rmse) %>%
+    dplyr::distinct() %>%
+    tidyr::pivot_wider(names_from = product, values_from = rmse) %>%
+    dplyr::filter(element == e_swap)
+    
+  tidyr::crossing(
+    x = c("PRISM", "gridMET", "Daymet"),
+    y = c("PRISM", "gridMET", "Daymet")
+  ) %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      p = t.test(vals[x], vals[y])$p.value
+    )
+}
+
+
+
+stations <- readr::read_csv("https://mesonet.climate.umt.edu/api/v2/stations/?type=csv", 
+                            show_col_types = FALSE) %>%
+  dplyr::select(station, name, longitude, latitude) 
+
+joined <- join_datasets()
