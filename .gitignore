@@ -6,3 +6,4 @@ GriddedPackage.Rproj
 */figures/*
 packrat/lib*/
 Rplots.pdf
+data-raw

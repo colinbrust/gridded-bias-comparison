@@ -43,7 +43,7 @@ calc_error <- function(joined, period='annual', station=FALSE) {
       month = month.name[month],
       month = factor(month, levels = month.name)
     ) %>% 
-    # dplyr::filter(!(element == 'ppt' & season != "Summer")) %>%
+    dplyr::filter(!(element == 'ppt' & season != "Summer")) %>%
     {
       if (station) {
         dplyr::group_by(., product, element, !!rlang::sym(period), station)
@@ -70,7 +70,8 @@ calc_error <- function(joined, period='annual', station=FALSE) {
         product,
         'daymet' = 'Daymet',
         'gridmet' = 'gridMET',
-        'prism' = 'PRISM' 
+        'prism' = 'PRISM',
+        'nclimgrid' = 'NClimGrid'
       )
     ) 
 }
@@ -105,8 +106,10 @@ plot_bar <- function(joined, period, stat='rmse') {
       scale_fill_manual(
         values = c(
           "Daymet" = "#1b9e77",
-          "gridMET" = "#d95f02",
-          "PRISM" = "#7570b3"
+          "gridMET" = "#e31a1c",
+          "PRISM" = "#7570b3",
+          "NClimGrid" = "#ff7f00"
+
         )
       ) +
       labs(x='', y='', fill = '', title = title) + 
@@ -138,16 +141,18 @@ plot_box <- function(joined, period, stat='rmse') {
     dplyr::select(station, product, element, time=dplyr::all_of(period), value=dplyr::all_of(stat)) %>% 
     ggplot(aes(x=time, y=value, fill=product)) + 
       geom_boxplot() +
-    facet_wrap(~element, nrow=3, scales='free_y') + 
-    scale_fill_manual(
-      values = c(
-        "Daymet" = "#1b9e77",
-        "gridMET" = "#d95f02",
-        "PRISM" = "#7570b3"
-      )
-    ) +
-    labs(x='', y='', fill = '', title = title) + 
-    theme_bw()
+      facet_wrap(~element, nrow=3, scales='free_y') + 
+      scale_fill_manual(
+        values = c(
+          "Daymet" = "#1b9e77",
+          "gridMET" = "#e31a1c",
+          "PRISM" = "#7570b3",
+          "NClimGrid" = "#ff7f00"
+        )
+      ) +
+      labs(x='', y='', fill = '', title = title) + 
+      theme_bw()
+
 }
 
 
@@ -196,8 +201,8 @@ calc_ttest <- function(joined, element='ppt') {
     dplyr::filter(element == e_swap)
     
   tidyr::crossing(
-    x = c("PRISM", "gridMET", "Daymet"),
-    y = c("PRISM", "gridMET", "Daymet")
+    x = c("PRISM", "gridMET", "Daymet", "NClimGrid"),
+    y = c("PRISM", "gridMET", "Daymet", "NClimGrid")
   ) %>%
     dplyr::rowwise() %>%
     dplyr::mutate(

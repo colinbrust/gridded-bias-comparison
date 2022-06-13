@@ -24,13 +24,21 @@ clean_gridded_raw <- function(dat) {
   
 }
 
-clean_all <- function(dirname = "./data-raw/extractions", out_dir = "./data-raw") {
+clean_all <- function(
+    dirname = "./data-raw/extractions", 
+    out_dir = "./data-raw",
+    nclimgrid = "./data-raw/raw_nclimgrid.csv"
+) {
+  
+  nclimgrid <- readr::read_csv(nclimgrid)
+
   
   list.files(dirname, full.names = T) %>% 
     purrr::map(readr::read_csv, show_col_types = FALSE) %>% 
     purrr::map(clean_extraction) %>%
     dplyr::bind_rows() %>% 
     clean_gridded_raw() %>% 
+    dplyr::bind_rows(nclimgrid) %>% 
     readr::write_csv(file.path(out_dir, "clean_gridded.csv"))
   
 }
