@@ -2,8 +2,9 @@ library(magrittr)
 library(ggplot2)
 
 join_datasets <- function(
-    gridded_f = "./data-raw/clean_gridded.csv",
-    mesonet_f = "./data-raw/daily_mesonet.csv"
+    gridded_f = "./data-raw/clean_gridded_new.csv",
+    mesonet_f = "./data-raw/daily_mesonet.csv",
+    filter_ppt = TRUE
 ) {
   
   mesonet_data <- readr::read_csv(mesonet_f, show_col_types = FALSE) %>% 
@@ -19,7 +20,14 @@ join_datasets <- function(
     dplyr::filter(
       !is.na(mesonet_value), !is.na(gridded_value), 
       !is.infinite(mesonet_value), !is.infinite(gridded_value)
-    )
+    ) %>% {
+      if(filter_ppt) {
+        dplyr::filter(
+          .,
+          !(element == 'ppt' & mesonet_value == 0)
+        )
+      }
+    }
 }
 
 rmse <- function(x, x_hat)  sqrt(mean((x - x_hat) ^ 2))
@@ -27,6 +35,8 @@ r2 <- function (x, x_hat) cor(x, x_hat) ^ 2
 mse <- function(x, x_hat)  mean((x - x_hat) ^ 2)
 bias <- function(x, x_hat) mean(x - x_hat)
 mae <- function(x, x_hat) mean(abs(x - x_hat))
+nrmse <- function(x, x_hat) rmse(x, x_hat)/sd(x, na.rm = T)
+mape <- function(x, x_hat) Metrics::mape(x, x_hat)
 
 calc_error <- function(joined, period='annual', station=FALSE) {
   
@@ -57,6 +67,8 @@ calc_error <- function(joined, period='annual', station=FALSE) {
       mse = mse(mesonet_value, gridded_value),
       bias = bias(mesonet_value, gridded_value),
       mae = mae(mesonet_value, gridded_value),
+      nrmse = nrmse(mesonet_value, gridded_value),
+      mape = mape(mesonet_value, gridded_value), 
       .groups = 'drop'
     ) %>%
     dplyr::mutate(
@@ -123,7 +135,8 @@ plot_box <- function(joined, period, stat='rmse') {
     'rmse' = 'RMSE',
     'bias' = 'Mean Bias',
     'mse' = 'MSE',
-    'r2' = 'R-Squared'
+    'r2' = 'R-Squared',
+    'nrmse' = "Normalized RMSE"
   )
   
   period_lab = switch(
